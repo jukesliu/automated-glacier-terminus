@@ -15,8 +15,8 @@ The workflow was developed around detecting glacier termini for 641 of the glaci
 | LS_pathrows.csv | Contains Landsat path and row information for each peripheral glacier by their BoxID |
 | Box###.shp | Terminus box shapfiles created by Dr. Alison Cook (University of Ottawa) |
 | attributes.csv? | Contains buffer distances calculated for each terminus box |
-| dir_degree_yx_velocity.tif | Glacier ice flow direction calculated from x, y velocity data (ESA Cryportal) |
-| magnitude_velocity.tif | Glacier ice flow magnitude (ESA Cryoportal) |
+| dir_degree_yx_velocity.tif | Glacier ice flow direction calculated from x, y velocity data (ESA Cryportal) - too large to upload|
+| magnitude_velocity.tif | Glacier ice flow magnitude (ESA Cryoportal) - too large to upload|
 
 ## File organization
 The workflow follows a certain file structure for storing the input and output data for each glacier. The general structure is:
