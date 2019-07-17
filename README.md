@@ -9,6 +9,8 @@ The workflow was developed around detecting glacier termini for 641 of the glaci
 | ------------- | ------------- |
 | LS8_download_aws.ipynb  | Downloads Landsat-8 images available for free through Amazon Web Services (aws)  |
 | Gperiph_imgprocessing.ipynb  | Processes Landsat images, Greenland ice velocity, and shapefiles before 2D WTMM analysis  |
+| Terminusbox_coords.ipynb  | Pulls vertices of the terminus boxes in pixel coordinates for calculating terminus position  |
+| Terminusposition.ipynb  | Calculates and plots terminus positions vs. time and terminus change rates |
 
 | Data          | Description   |
 | ------------- | ------------- |
@@ -19,5 +21,9 @@ The workflow was developed around detecting glacier termini for 641 of the glaci
 | magnitude_velocity.tif | Glacier ice flow magnitude (ESA Cryoportal) - too large to upload|
 
 ## File organization
-The workflow follows a certain file structure for storing the input and output data for each glacier. The general structure is:
+The workflow follows a certain file structure for storing the input and output data for each glacier. The general structure is... Work in progress.
+
+## To-Do:
+-separate out individual box shapefiles for every glacier
+-determine LS path and row information for every glacier box
 
