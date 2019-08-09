@@ -11,6 +11,7 @@ The workflow was developed around detecting glacier termini for 641 of the glaci
 | Gperiph_imgprocessing.ipynb  | Processes Landsat images, Greenland ice velocity, and shapefiles before 2D WTMM analysis  |
 | Terminusbox_coords.ipynb  | Pulls vertices of the terminus boxes in pixel coordinates for calculating terminus position  |
 | Terminusposition.ipynb  | Calculates and plots terminus positions vs. time and terminus change rates |
+| Boxes_topathrows.ipynb  | Determines all the Landsat path_rows for scenes over each glacier |
 
 | Data          | Description   |
 | ------------- | ------------- |
@@ -23,7 +24,20 @@ The workflow was developed around detecting glacier termini for 641 of the glaci
 *Files are too large to be uploaded onto GitHub. Contact Julia Liu if you would like to access these data.
 
 ## File organization
-The workflow follows a certain file structure for storing the input and output data for each glacier. The general structure is... Work in progress.
+The workflow follows a certain file structure for storing the input and output data for each glacier. The general structure is:
+Scene_Directory
+> __Glacier folders by BoxID (Box001)__
+> Box002
+> Box###
+> ...
+> __Path_Row folders containing scene metadata__
+> Path###_Row###
+> ...
+> __terminus pick results by metric__
+> terminus_highestmass
+  > Box### 
+  > Box###
+> terminus_highestsize
 
 ## To-Do:
 -separate out individual box shapefiles for every glacier
