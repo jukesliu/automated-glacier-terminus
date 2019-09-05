@@ -23,6 +23,22 @@ The workflow was developed around detecting glacier termini for 641 of the glaci
 
 *Files are too large to be uploaded onto GitHub. Contact Julia Liu if you would like to access these data.
 
+## Order of Operations. Workflow.
+
+1) Grab all possible PathRow overlaps for each terminus box (Boxes_topathrows.ipynb)
+2) Calculate left side midpoint for each terminus box (Terminusbox_coords.ipynb --> Boxes_coords_pathrows.csv)
+2) Create buffer zones around terminus boxes and calculate average glacier flow directions for rotations (Gperiph_preprocess.ipynb)
+3) Download subset images and grab dates as a .csv for each image (LS8_download_aws.ipynb --> datetags.csv)
+4) Reproject images (Gperiph_preprocess.ipynb)
+5) Rotate images (rotations.ijm)
+6) Resize images (resize all.ijm)
+7) Run 2D WTMM (scr_gaussian.tcl)
+8) Pick terminus chain and export to dat files (terminus_pick.tcl --> terminuspicks_metric_yyyy_mm_dd.csv)
+9) Calculate centroids for all dat files created (Calculate_term_centroids.ipynb --> trim_centroids_metric.csv)
+10) Combine centroids, terminus pick, and datetag csv files to calculate terminus position, change rates, and plot (Terminusposition.ipynb --> terminuschange_Box###_metric.csv)
+11) Plot terminus picks (dat files) and centroids over images analyzed, show date and terminus change rate
+
+
 ## File organization
 The workflow follows a certain file structure for storing the input and output data for each glacier. The general structure is:
 Scene_Directory
