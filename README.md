@@ -7,11 +7,11 @@ The workflow was developed around detecting glacier termini for 641 of the glaci
 
 | Scripts       | Description   |
 | ------------- | ------------- |
-| LS8_download_aws.ipynb  | Downloads Landsat-8 images available for free through Amazon Web Services (aws)  |
-| Gperiph_imgprocessing.ipynb  | Processes Landsat images, Greenland ice velocity, and shapefiles before 2D WTMM analysis  |
+| AWS_LS8_download.ipynb  | Downloads Landsat-8 images available over the glaciers through Amazon Web Services (aws)  |
+| Gperiph_imgprocessing.ipynb  | Processes Landsat images, Greenland ice velocity, and shapefiles |
 | Terminusbox_coords.ipynb  | Pulls vertices of the terminus boxes in pixel coordinates for calculating terminus position  |
 | Terminusposition.ipynb  | Calculates and plots terminus positions vs. time and terminus change rates |
-| Boxes_topathrows.ipynb  | Determines all the Landsat path_rows for scenes over each glacier |
+| Show_term_pick_results.ipynb  | Visualizes the terminus pick results over the images analyzed |
 
 | Data          | Description   |
 | ------------- | ------------- |
@@ -25,18 +25,19 @@ The workflow was developed around detecting glacier termini for 641 of the glaci
 
 ## Order of Operations. Workflow.
 
-1) Grab all possible PathRow overlaps for each terminus box (Boxes_topathrows.ipynb)
-2) Calculate left side midpoint for each terminus box (Terminusbox_coords.ipynb --> Boxes_coords_pathrows.csv)
-2) Create buffer zones around terminus boxes and calculate average glacier flow directions for rotations (Gperiph_preprocess.ipynb)
-3) Download subset images, reproject, and grab dates as a .csv for each image (AWS_LS8_download.ipynb --> imgdates.csv)
-4) Convert downloaded subsets to png files (mogrify -format png *.TIF) 
-5) Rotate so flow direction is due right (rotations.ijm)
-6) Resize images to match the mask (resize_all.ijm)
+1) Create buffer zones around terminus boxes, rasterize terminus boxes, and calculate average glacier flow directions for rotations (Gperiph_preprocess.ipynb --> Glacier_velocities.csv)
+2) Download subset images for all LS Path_Row combos over the glacier, reproject, and grab dates as a .csv for each image (AWS_LS8_download.ipynb --> imgdates.csv)
+3) Convert downloaded subsets to png files (mogrify -format png *.TIF) 
+4) Rotate terminus box rasters so flow direction is due right (add into script)
+5) Rotate all images so flow direction is due right (rotations.ijm)
+6) Resize all images so that mask and img dimensions are uniform (resize_all.ijm)
+
 7) Run 2D WTMM (scr_gaussian.tcl)
-8) Pick terminus chain and export to dat files (terminus_pick.tcl --> terminuspicks_metric_yyyy_mm_dd.csv)
-9) Calculate centroids for all dat files created (Calculate_term_centroids.ipynb --> trim_centroids_metric.csv)
-10) Combine centroids, terminus pick, and datetag csv files to calculate terminus position, change rates, and plot (Terminusposition.ipynb --> terminuschange_Box###_metric.csv)
-11) Plot terminus picks (dat files) and centroids over images analyzed, show date and terminus change rate
+8) Pick top 5 terminus chains and export to dat files, record info in a .csv file (terminus_pick.tcl --> terminuspicks_metric_yyyy_mm_dd.csv)
+
+9) Calculate left side midpoint and centerlines for each rotated terminus box (Terminusbox_coords.ipynb --> Boxes_coords_pathrows.csv)
+10) Calculate centerline intersection with each terminus picks, combine with imgdates.csv and WTMM info to plot terminus position timeseries and terminus change rates (Terminusposition.ipynb)
+11) Plot terminus picks (dat files) and centroids over images analyzed (Show_term_pick_results.ipynb)
 
 
 ## File organization
@@ -54,8 +55,3 @@ Scene_Directory
   > Box### 
   > Box###
 > terminus_highestsize
-
-## To-Do:
--separate out individual box shapefiles for every glacier
--determine LS path and row information for every glacier box
-
