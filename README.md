@@ -10,7 +10,7 @@ Workflow:
 6) Resize all images so they have the exact same dimensions (resize_all.ijm)
 7) Run the 2D WTMM (scr_gaussian.tcl)
 8) Calculate terminus box midpoint and centerline (Terminusbox_coords.ipynb)
-9) Grab centerline pixel ratios (Pixel_brightness_centerline.ipynb)
+9) Convert images to png (mogrify -format png *.pgm) and grab centerline pixel ratios (Pixel_brightness_centerline.ipynb)
 10) Pick the top terminus chains from the extrema images from step 7 (terminus_pick.tcl)
 11) Visualize the results (Results_full_run.ipynb OR Results_per_glacier.ipynb)
 12) Calculate terminus position and plot timeseries (Results_per_glacier.ipynb)
