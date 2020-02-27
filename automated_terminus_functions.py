@@ -13,12 +13,6 @@
 #  - to_datetimes
 #  - midpoint
 
-# In[11]:
-
-
-import math
-
-
 # In[1]:
 
 
@@ -205,11 +199,11 @@ def within(value, setval, interval):
         return False
 
 
-# In[12]:
+# In[13]:
 
 
 def distance(x1, y1, x2, y2):
-    dist = math.sqrt(((x2-x1)**2)+((y2-y1)**2))
+    dist = (((x2-x1)**2)+((y2-y1)**2))**(1/2)
     return dist
 
 
