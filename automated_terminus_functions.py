@@ -13,11 +13,12 @@
 #  - to_datetimes
 #  - midpoint
 
-# In[1]:
+# In[10]:
 
 
 #define a function to calculate terminus change rate:
 def calc_changerates3(df):
+    import pandas as pd; import numpy as np
     tchange50 = []; tchange25 = []; tchange75 = []
     
     for i in range(0, len(df.index)):
@@ -60,11 +61,12 @@ def calc_changerates3(df):
     return df
 
 
-# In[2]:
+# In[11]:
 
 
 #define a function to calculate terminus change rate:
 def calc_changerates1(df):
+    import pandas as pd; import numpy as np
     df = df.dropna(subset=['tpos'])
     original_len = df.shape[0]; tchange= []
     
@@ -106,10 +108,11 @@ def calc_changerates1(df):
     return df
 
 
-# In[3]:
+# In[12]:
 
 
 def remove_dips(df, flow_thresh, iterations):
+    import pandas as pd
     for iteration in range(0, iterations):
         #reset index
         df = df.reset_index(drop=True)
@@ -148,10 +151,11 @@ def remove_dips(df, flow_thresh, iterations):
     return df
 
 
-# In[4]:
+# In[13]:
 
 
 def remove_jumps(df, flow_thresh, iterations):
+    import pandas as pd
     for iteration in range(0, iterations):
         #reset index for final_images_df
         df = df.reset_index(drop=True); jump_indices = []
@@ -207,10 +211,11 @@ def distance(x1, y1, x2, y2):
     return dist
 
 
-# In[7]:
+# In[14]:
 
 
 def to_datetimes(df):
+    import datetime
     datetimes = df.loc[:,'datetimes']; datetime_objs = []
     for date in datetimes:
         datetime_obj = datetime.datetime.strptime(str(date), '%Y-%m-%d'); datetime_obj = np.datetime64(datetime_obj)
@@ -227,10 +232,11 @@ def midpoint(x1, y1, x2, y2):
     return midx, midy
 
 
-# In[29]:
+# In[7]:
 
 
 def calc_theta():
+    import pandas as pd; import numpy as np
     #MANUAL TERMINUS POSITIONS
     manual_path = '/media/jukes/jukes1/Manual/'; manual_filename = 'manual_tpos.csv'
     auto_path = '/home/jukes/Documents/Sample_glaciers/'
@@ -293,10 +299,11 @@ def calc_theta():
     return theta1_all
 
 
-# In[32]:
+# In[5]:
 
 
-def objective_func(input_IDs, size_thresh, mod_thresh):
+def objective_func(inputIDs, size_thresh, mod_thresh):
+    import subprocess
     #from thresholds, pick the lines
     terminus_pick = '/home/akhalil/src/xsmurf-2.7/main/xsmurf -nodisplay /home/jukes/Documents/Scripts/terminus_pick.tcl '+str(size_thresh)+' '+str(mod_thresh)+' '+inputIDs
     subprocess.call(terminus_pick, shell=True)
