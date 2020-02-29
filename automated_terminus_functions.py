@@ -227,10 +227,14 @@ def midpoint(x1, y1, x2, y2):
     return midx, midy
 
 
-# In[19]:
+# In[29]:
 
 
-def objective_func(manual_df):
+def calc_theta():
+    #MANUAL TERMINUS POSITIONS
+    manual_path = '/media/jukes/jukes1/Manual/'; manual_filename = 'manual_tpos.csv'
+    auto_path = '/home/jukes/Documents/Sample_glaciers/'
+    manual_df = pd.read_csv(manual_path+manual_filename, dtype=str,sep=',')
     #SPLIT INTO 3 DATAFRAMES FOR 3 FLOWLINES:
     manual50 = manual_df[['BoxID','datetimes', 'intersect_x', 'intersect_y', 
                                           'tpos50']].copy().reset_index(drop=True).rename(columns={"tpos50": "tpos"})
@@ -245,7 +249,6 @@ def objective_func(manual_df):
     #FOR EACH GLACIER BOXID:
     BoxIDs = list(set(manual_df.BoxID))
     for BoxID in BoxIDs:
-        print("Box"+BoxID)
         #grab automated tpos
         auto50 = pd.read_csv(auto_path+'Tpos_Box'+BoxID+'_flowline50_filtered.csv', dtype=str,sep=',')
         auto25 = pd.read_csv(auto_path+'Tpos_Box'+BoxID+'_flowline25_filtered.csv', dtype=str,sep=',')
@@ -280,11 +283,32 @@ def objective_func(manual_df):
         
     #CALCULATE OVERALL THETA
     theta1_all = np.average(theta1s); theta2_all = np.average(theta2s)
-    #organize data in dataframe
-    column_titles = ['Theta_avg']+BoxIDs
-    theta1_for_df = [theta1_all]+theta1s; theta2_for_df = [theta2_all]+theta2s
-    #write to csv
-    theta_df = pd.DataFrame(list(zip(column_titles, theta1_for_df, theta2_for_df)), 
-                 columns=['ID', 'theta1', 'theta2'])
-    return theta_df 
+#     #organize data in dataframe
+#     column_titles = ['Theta_avg']+BoxIDs
+#     theta1_for_df = [theta1_all]+theta1s; theta2_for_df = [theta2_all]+theta2s
+#     #write to csv
+#     theta_df = pd.DataFrame(list(zip(column_titles, theta1_for_df, theta2_for_df)), 
+#                  columns=['ID', 'theta1', 'theta2'])
+#     return theta_df 
+    return theta1_all
+
+
+# In[32]:
+
+
+def objective_func(input_IDs, size_thresh, mod_thresh):
+    #from thresholds, pick the lines
+    terminus_pick = '/home/akhalil/src/xsmurf-2.7/main/xsmurf -nodisplay /home/jukes/Documents/Scripts/terminus_pick.tcl '+str(size_thresh)+' '+str(mod_thresh)+' '+inputIDs
+    subprocess.call(terminus_pick, shell=True)
+    #from the lines, get the results
+    results_allglaciers = '/home/jukes/anaconda3/bin/python3.7 /home/jukes/automated-glacier-terminus/Results_allglaciers.py'
+    subprocess.call(results_allglaciers, shell=True)
+    #calculate value of theta
+    return calc_theta()
+
+
+# In[ ]:
+
+
+
 
