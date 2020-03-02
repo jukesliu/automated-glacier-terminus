@@ -17,6 +17,7 @@ import scipy.stats
 import datetime
 import math
 import shutil
+import matplotlib.image as mpimg
 import subprocess
 os.chdir('/home/jukes/automated-glacier-terminus')
 from automated_terminus_functions import calc_changerates1, to_datetimes, within, remove_dips, remove_jumps
@@ -40,7 +41,7 @@ print(datetime_df.shape)
 
 
 analysis_date = str(datetime.datetime.now())[0:10]
-analysis_date.replace('-', '_'); print(analysis_date)
+analysis_date = analysis_date.replace('-', '_'); print(analysis_date)
 #DELINEATION METRIC AND ORDER 
 for file in os.listdir(csvpaths):
     if analysis_date in file and file.endswith('.csv'):
