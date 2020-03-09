@@ -12,12 +12,18 @@
 
 import numpy as np
 import os
+import matplotlib.pyplot as plt
+import matplotlib.pylab as pl
+import matplotlib.image as mpimg
+import matplotlib.patches as patches
+import cv2
 import pandas as pd    
+from time import sleep
+from IPython.display import clear_output
 import scipy.stats
 import datetime
 import math
 import shutil
-import matplotlib.image as mpimg
 import subprocess
 os.chdir('/home/jukes/automated-glacier-terminus')
 from automated_terminus_functions import calc_changerates1, to_datetimes, within, remove_dips, remove_jumps

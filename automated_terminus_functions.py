@@ -112,7 +112,7 @@ def calc_changerates1(df):
 
 
 def remove_dips(df, flow_thresh, iterations):
-    import pandas as pd
+    import pandas as pd; import numpy as np
     for iteration in range(0, iterations):
         #reset index
         df = df.reset_index(drop=True)
@@ -155,7 +155,7 @@ def remove_dips(df, flow_thresh, iterations):
 
 
 def remove_jumps(df, flow_thresh, iterations):
-    import pandas as pd
+    import pandas as pd; import numpy as np
     for iteration in range(0, iterations):
         #reset index for final_images_df
         df = df.reset_index(drop=True); jump_indices = []
@@ -215,7 +215,7 @@ def distance(x1, y1, x2, y2):
 
 
 def to_datetimes(df):
-    import datetime
+    import datetime; import numpy as np
     datetimes = df.loc[:,'datetimes']; datetime_objs = []
     for date in datetimes:
         datetime_obj = datetime.datetime.strptime(str(date), '%Y-%m-%d'); datetime_obj = np.datetime64(datetime_obj)
