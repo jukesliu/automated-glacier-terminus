@@ -302,10 +302,11 @@ def calc_theta():
 # In[5]:
 
 
-def objective_func(inputIDs, size_thresh, mod_thresh):
+def objective_func(size_thresh, mod_thresh, arg_thresh, order):
     import subprocess
+    inputIDs = " ".join(['001', '002', '120', '174', '259']) # the BoxIDs to input
     #from thresholds, pick the lines
-    terminus_pick = '/home/akhalil/src/xsmurf-2.7/main/xsmurf -nodisplay /home/jukes/Documents/Scripts/terminus_pick.tcl '+str(size_thresh)+' '+str(mod_thresh)+' '+inputIDs
+    terminus_pick = '/home/akhalil/src/xsmurf-2.7/main/xsmurf -nodisplay /home/jukes/Documents/Scripts/terminus_pick'+str(order)+'.tcl '+str(size_thresh)+' '+str(mod_thresh)+' '+str(arg_thresh)+' '+str(inputIDs)
     subprocess.call(terminus_pick, shell=True)
     #from the lines, get the results
     results_allglaciers = '/home/jukes/anaconda3/bin/python3.7 /home/jukes/automated-glacier-terminus/Results_allglaciers.py'
