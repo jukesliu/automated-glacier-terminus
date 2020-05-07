@@ -232,7 +232,7 @@ def midpoint(x1, y1, x2, y2):
     return midx, midy
 
 
-# In[6]:
+# In[19]:
 
 
 def calc_theta():
@@ -279,7 +279,8 @@ def calc_theta():
             lists3_norm.append(list(compare_df['diff/sigma']))
         diff_all = lists3[0]+lists3[1]+lists3[2] #list of all the differences between manual and auto
         normalizeddiff_all = lists3_norm[0]+lists3_norm[1]+lists3_norm[2] #list of all the normalized differences
-        N = len(auto50)+len(auto25)+len(auto75) #number of total terminus position points detected
+        N = len(manual_df) #number of total terminus position points detected
+        Nfrac = N/(len(manual50_df)+len(manual25_df)+len(manual75_df)) # fraction of manual delineations that automated method picked up
 
         #CALCULATE THETA:
         theta1 = (1.0/N)*np.sum(normalizeddiff_all) #sum of normalized differences along flowlines
@@ -299,11 +300,12 @@ def calc_theta():
     return theta2_all
 
 
-# In[7]:
+# In[20]:
 
 
-def objective_func(size_thresh, mod_thresh, arg_thresh, order, dataset, N1, N2):
+def objective_func(size_thresh, mod_thresh, arg_thresh, order, dataset, V, N1, N2):
     import subprocess
+    import os
     inputIDs = " ".join(['001', '002', '120', '174', '259']) # the BoxIDs to input
     #from thresholds, pick the lines
     terminus_pick = '/home/akhalil/src/xsmurf-2.7/main/xsmurf -nodisplay /home/jukes/Documents/Scripts/terminus_pick'+str(order)+'.tcl '+str(size_thresh)+' '+str(mod_thresh)+' '+str(arg_thresh)+' '+str(dataset)+' '+str(inputIDs)
@@ -312,19 +314,28 @@ def objective_func(size_thresh, mod_thresh, arg_thresh, order, dataset, N1, N2):
 #     results_allglaciers = '/home/jukes/anaconda3/bin/python3.7 /home/jukes/automated-glacier-terminus/Results_allglaciers.py'
 #     subprocess.call(results_allglaciers, shell=True)
     # from the lines, get the results using the new result_all glaciers function:
-    os.chdir('/home/jukes/automated-glacier-terminus'); from automated_terminus_functions import results_allglaciers
-    results_allglaciers(N1,N2)
+    os.chdir('/home/jukes/automated-glacier-terminus')
+    from automated_terminus_functions import results_allglaciers
+    results_allglaciers(V,N1,N2)
     #calculate value of theta
     return calc_theta()
 
 
-# In[8]:
+# In[3]:
 
 
-def results_allglaciers(N1, N2):
-    import numpy as np; import os; import pandas as pd    
-    import scipy.stats; import datetime; import math
-    import shutil; import subprocess
+def results_allglaciers(V, N1, N2):
+    import numpy as np
+    import os
+    import pandas as pd    
+    import scipy.stats
+    import datetime
+    import math
+    import shutil
+    import subprocess
+    import matplotlib.image as mpimg
+    import matplotlib.pyplot as plt
+    import matplotlib.pylab as pl
     os.chdir('/home/jukes/automated-glacier-terminus')
     from automated_terminus_functions import calc_changerates1, to_datetimes, within, remove_dips, remove_jumps
 
@@ -334,7 +345,7 @@ def results_allglaciers(N1, N2):
     datetime_df = pd.read_csv(csvpaths+'imgdates.csv', sep=',', dtype=str, header=0, names=['Scene', 'datetimes'])
     print(datetime_df.shape)
     analysis_date = str(datetime.datetime.now())[0:10]
-    analysis_date.replace('-', '_'); print(analysis_date)
+    analysis_date = analysis_date.replace('-', '_'); print(analysis_date)
     #DELINEATION METRIC AND ORDER 
     for file in os.listdir(csvpaths):
         if analysis_date in file and file.endswith('.csv'):
@@ -347,7 +358,7 @@ def results_allglaciers(N1, N2):
     centerline_df = centerline_df.set_index('BoxID')
     
     #GLACIER VELOCITIES
-    flowspeed_df= pd.read_csv(csvpaths+'Glacier_vel_measures_sample10.csv', sep=',', dtype=str)
+    flowspeed_df= pd.read_csv(csvpaths+'Glacier_vel_measures.csv', sep=',', dtype=str)
     flowspeed_df = flowspeed_df.set_index('BoxID')
     
     BoxIDs = list(set(order_df.BoxID)) # List of BoxIDs
@@ -506,9 +517,9 @@ def results_allglaciers(N1, N2):
         #FILTER USING 5*MAXIMUM FLOW SPEEDS
         max_flow = float(flowspeed_df['Max_speed'][BOI])
         if max_flow < 1.0:
-            flow_thresh = 5.0
+            flow_thresh = V
         else:
-            flow_thresh = 5.0*max_flow
+            flow_thresh = V*max_flow
         #remove dips
 #         N1 = 3; 
         nodips = []
@@ -519,47 +530,56 @@ def results_allglaciers(N1, N2):
         nojumps = []
         for df in nodips:
             nojumps.append(remove_jumps(df, flow_thresh, N2))
-
-        #GRAB HIGHEST ORDER PICK AFTER FILTERING
-        highestorder_dfs = []
+        
+        stop = 0
+        #stop the process if there are no points
         for df in nojumps:
-            #grab unique dates
-            unique_dates = set(list(df['datetimes']))
-            print(len(unique_dates))
-            #grab highest orders:
-            order_list = []
-            for date in unique_dates:
-                date_df = df[df['datetimes'] == date].copy()
-                highestorder = np.min(np.array(date_df['Order']))
-                order_list.append(highestorder)
-            highestorder_df = pd.DataFrame(list(zip(unique_dates, order_list)), columns=['datetimes', 'Order']).sort_values(by='datetimes', ascending=True)
-            highestorder_dfs.append(highestorder_df)
+            if len(df) == 0:
+                stop = 1
+                print('No points remaining. Processed stopped for Box'+BOI)
+                
+        if stop == 0:
+            #GRAB HIGHEST ORDER PICK AFTER FILTERING
+            highestorder_dfs = []
+            for df in nojumps:
+                    #grab unique dates
+                    unique_dates = set(list(df['datetimes']))
+                    print(len(unique_dates))
+                    #grab highest orders:
+                    order_list = []
+                    for date in unique_dates:
+                        date_df = df[df['datetimes'] == date].copy()
+                        highestorder = np.min(np.array(date_df['Order']))
+                        order_list.append(highestorder)
+                    highestorder_df = pd.DataFrame(list(zip(unique_dates, order_list)), columns=['datetimes', 'Order']).sort_values(by='datetimes', ascending=True)
+                    highestorder_dfs.append(highestorder_df)
 
-        onepick_dfs = []
-        for i in range(0, len(highestorder_dfs)):
-            onepick_df = nojumps[i].merge(highestorder_dfs[i], how='inner', on=['datetimes', 'Order'])
-            onepick_dfs.append(onepick_df)
-            print(onepick_df.shape[0])
+            onepick_dfs = []
+            for i in range(0, len(highestorder_dfs)):
+                onepick_df = nojumps[i].merge(highestorder_dfs[i], how='inner', on=['datetimes', 'Order'])
+                onepick_dfs.append(onepick_df)
+                print(onepick_df.shape[0])
 
-        #PLOT AND SAVE
-        fig, ax1 = plt.subplots(figsize=(12,4))
-        markers = ['mo', 'ro', 'bo']
-        for j in range(0, len(onepick_dfs)):
-            df = onepick_dfs[j];    print(len(df))
-            ax1.plot(df['datetimes'], df['tpos'], markers[j], markersize=5, alpha=0.8)
-        #general plot parameters
-        ax1.set_ylabel('Terminus position (m)', color='k', fontsize=12)
-        ax1.set_title("Box"+BOI, fontsize=16); ax1.set_xlabel('Date', fontsize=12)
-        ax1.tick_params(axis='both', which='major', labelsize=12)
-        #save figure
-        plt.savefig(csvpaths+"/Figures/Termposition_LS8_m_Box"+BOI+"_"+analysis_date+".png", dpi=200)
-        plt.legend(['1/2', '1/4', '3/4'])
-        plt.show()
+            #PLOT AND SAVE
+            fig, ax1 = plt.subplots(figsize=(12,4))
+            markers = ['mo', 'ro', 'bo']
+#             for j in range(0, len(onepick_dfs)): # ALL THREE PLOT
+            for j in range(0, 1): # JUST CENTERLINE
+                df = onepick_dfs[j];    print(len(df))
+                ax1.plot(df['datetimes'], df['tpos'], markers[j], markersize=5, alpha=0.8)
+            #general plot parameters
+            ax1.set_ylabel('Terminus position (m)', color='k', fontsize=12)
+            ax1.set_title("Box"+BOI, fontsize=16); ax1.set_xlabel('Date', fontsize=12)
+            ax1.tick_params(axis='both', which='major', labelsize=12)
+            #save figure
+            plt.savefig(csvpaths+"/Figures/Termposition_LS8_m_Box"+BOI+"_"+analysis_date+".png", dpi=200)
+            plt.legend(['1/2', '1/4', '3/4'])
+            plt.show()
 
-        flowlines = ['flowline50', 'flowline25', 'flowline75']
-        for k in range(0, len(onepick_dfs)):
-            df = onepick_dfs[k];
-            df.to_csv(path_or_buf = csvpaths+'Tpos_Box'+BOI+'_'+flowlines[k]+'_filtered.csv', sep=',')
+            flowlines = ['flowline50', 'flowline25', 'flowline75']
+            for k in range(0, len(onepick_dfs)):
+                df = onepick_dfs[k];
+                df.to_csv(path_or_buf = csvpaths+'Tpos_Box'+BOI+'_'+flowlines[k]+'_filtered.csv', sep=',')
 
 
 # In[ ]:
