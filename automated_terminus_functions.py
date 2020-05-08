@@ -172,7 +172,7 @@ def remove_jumps(df, flow_thresh, iterations):
             #grab previous date of analysis 
             counter = 1; prev_date = list(df['datetimes'])[i-counter]
             #while the previous date = current date, append the counter and find the previous previous date
-            while prev_date == date:
+            while prev_date == date and counter < len(df):
                 counter = counter+1; prev_date = list(df['datetimes'])[i-counter]
             delta_date = date - prev_date; delta_date = delta_date.days
 
@@ -342,7 +342,7 @@ def results_allglaciers(V, N1, N2):
     csvpaths = '/home/jukes/Documents/Sample_glaciers/'; basepath = '/media/jukes/jukes1/LS8aws/'; massorsize = "mass"
     
     #IMAGE DATES
-    datetime_df = pd.read_csv(csvpaths+'imgdates.csv', sep=',', dtype=str, header=0, names=['Scene', 'datetimes'])
+    datetime_df = pd.read_csv(csvpaths+'imgdates_SE.csv', sep=',', dtype=str, header=0, names=['Scene', 'datetimes'])
     print(datetime_df.shape)
     analysis_date = str(datetime.datetime.now())[0:10]
     analysis_date = analysis_date.replace('-', '_'); print(analysis_date)
@@ -354,11 +354,11 @@ def results_allglaciers(V, N1, N2):
     order_df = order_df.dropna()
     
     #CENTERLINE INFO
-    centerline_df = pd.read_csv(csvpaths+'Boxes_coords_pathrows.csv', sep=',', dtype=str, header=0)
+    centerline_df = pd.read_csv(csvpaths+'Boxes_coords_pathrows_SE.csv', sep=',', dtype=str, header=0)
     centerline_df = centerline_df.set_index('BoxID')
     
     #GLACIER VELOCITIES
-    flowspeed_df= pd.read_csv(csvpaths+'Glacier_vel_measures.csv', sep=',', dtype=str)
+    flowspeed_df= pd.read_csv(csvpaths+'Glacier_vel_measures_SE.csv', sep=',', dtype=str)
     flowspeed_df = flowspeed_df.set_index('BoxID')
     
     BoxIDs = list(set(order_df.BoxID)) # List of BoxIDs
