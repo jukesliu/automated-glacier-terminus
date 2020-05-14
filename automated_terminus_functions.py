@@ -67,32 +67,31 @@ def calc_changerates3(df):
 #define a function to calculate terminus change rate:
 def calc_changerates1(df):
     import pandas as pd; import numpy as np
-    df = df.dropna(subset=['tpos'])
-    original_len = df.shape[0]; tchange= []
+    df = df.dropna(subset=['tpos']) # drop any NaN terminus positions
+    tchange = [] # store the terminus change rates
     
     for i in range(0, len(df.index)):
-        date = list(df['datetimes'])[i]; tpos = list(df['tpos'])[i]
+        date = list(df['datetimes'])[i]; tpos = list(df['tpos'])[i] # grab the date and terminus position
         
         #CALCULATE TERMINUS CHANGE RATE
-        #grab the earliest date
-        earliestdate = list(df['datetimes'])[0]
+        earliestdate = list(df['datetimes'])[0] #grab the earliest date
         #for the first date, the changerate is nan
         if date == earliestdate:
             changerate = np.NaN
-        #for all other subsequent entries:
-        else:
-            #grab current date and terminus positions
+        else: 
+            # set current date and terminus position
             t = date; x = tpos; 
         
             #grab previous date of analysis 
             counter = 1; t_prev = list(df['datetimes'])[i-counter]
-            #while the previous date = current date, append the counter and find the date before that!
+            
+            # if it's the same date (previous = current), keep going back while this is true
             while t_prev == t:
                 counter = counter+1; t_prev = list(df['datetimes'])[i-counter]
-
-            #grab all terminus positions from previous date of analysis:
-            prev_df = df[df['datetimes'] == t_prev].copy()
-            positions = list(prev_df.tpos)
+                
+            # when previous time point is found, grab the terminus positions
+            prev_df = df[df['datetimes'] == t_prev].copy(); positions = list(prev_df.tpos)
+            
             #if there are multiple, grab the average of all of them
             x_prev = np.nanmean(np.array(positions));
             
@@ -108,46 +107,42 @@ def calc_changerates1(df):
     return df
 
 
-# In[12]:
+# In[1]:
 
 
 def remove_dips(df, flow_thresh, iterations):
     import pandas as pd; import numpy as np
     for iteration in range(0, iterations):
-        #reset index
-        df = df.reset_index(drop=True)
-        dip_indices = [];
+        df = df.reset_index(drop=True); dip_indices = []; # reset indices (this will be important later)
 
-        # for index, row in onepick_df.iterrows():
         for index, row in df.iterrows():
-            date = row['datetimes']
-            rate = row['changerate']
-            #for negative change rates:
+            date = row['datetimes']; rate = row['changerate'] # grab date and change rate
+            
+            # for negative change rates:
             if rate < 0 and rate < -flow_thresh:
-                #check the next entry only if it's in the range of indices
+                # check the next entry only if it's in the range of indices
                 if index+1 < len(df.index):  
+                    # pick the next immediate rate & date
                     counter = 1
-                    #pick the next immediate rate/date
-                    nextrate= df.loc[index+counter]['changerate']; nextdate = df.loc[index+counter]['datetimes']                    
-                    #while the next date is the same as the current, increment the counter
-                    #to grab the next next date until the next date is different from the current
+                    nextrate = df.loc[index+counter]['changerate']; nextdate = df.loc[index+counter]['datetimes']                    
+                    # if next date is the same as the current, increment the counter
+                    # to grab the next next date until the next date is different from the current
                     while nextdate == date and index+counter < len(df.index)-1:
                         counter = counter + 1; nextrate = df.loc[index+counter]['changerate']
                         nextdate = df.loc[index+counter]['datetimes']
 
-                    #if it's a sudden jump, then we have found a dip. Remove it
+                    # if it's a sudden jump (change rate to next > flow_thresh), then we have found a dip
                     if nextrate > abs(flow_thresh):
                         dip_indices.append(index)
                             
-                #if it's a crazy large negative change, 
-                #remove it even if there isn't a positive change following
+                # if it's a crazy large negative change, flag it even if there isn't a positive change following
                 if rate < -(15*abs(flow_thresh)):
-                    dip_indices.append(index)            
-        print(dip_indices)
-        #REMOVE THOSE TERMINUS POSITIONS
-        df = df.drop(dip_indices)
-        #recalculate terminus changerates
-        df = calc_changerates1(df)
+                    dip_indices.append(index) 
+                    
+        print("Dropping", len(dip_indices), "dips") # show number of dropped indices 
+        
+        # REMOVE those points and recalculate terminus change rates 
+        df = df.drop(dip_indices); df = calc_changerates1(df)
     return df
 
 
@@ -157,23 +152,23 @@ def remove_dips(df, flow_thresh, iterations):
 def remove_jumps(df, flow_thresh, iterations):
     import pandas as pd; import numpy as np
     for iteration in range(0, iterations):
-        #reset index for final_images_df
         df = df.reset_index(drop=True); jump_indices = []
 
         for i in range(0, len(df.index)):
-            date = list(df['datetimes'])[i]; rate = list(df['changerate'])[i]
-            tpos = list(df['tpos'])[i]; index = list(df.index)[i]
-
+            date = list(df['datetimes'])[i]; rate = list(df['changerate'])[i] # grab date and change rate
+            tpos = list(df['tpos'])[i]; index = list(df.index)[i] # grab the terminus position and index
+            
+            # if the change rate is faster than our threshold, then we have found a jump
             if rate > abs(flow_thresh):
-                #remove it:
                 jump_indices.append(index)
 
-            #remove drops if they are due to first value for the season
-            #grab previous date of analysis 
+            # grab previous date of analysis 
             counter = 1; prev_date = list(df['datetimes'])[i-counter]
-            #while the previous date = current date, append the counter and find the previous previous date
-            while prev_date == date and counter < len(df):
+            # while the previous date = current, append the counter and find the actual previous timepoint
+            while prev_date == date:
                 counter = counter+1; prev_date = list(df['datetimes'])[i-counter]
+            
+            # calculate the time between this point and the previous
             delta_date = date - prev_date; delta_date = delta_date.days
 
             #if the time gap is more than 2 months, and has a positive change rate
@@ -183,7 +178,7 @@ def remove_jumps(df, flow_thresh, iterations):
             if delta_date > 60 and rate > 0:
                 if tpos > tpos_thresh:
                     jump_indices.append(index)
-        print(jump_indices)
+        print("Dropping", len(jump_indices), "jumps") # show number of dropped indices 
         #drop the indices and reclaculate terminus change rates
         df = df.drop(jump_indices)
         df = calc_changerates1(df)
@@ -321,10 +316,10 @@ def objective_func(size_thresh, mod_thresh, arg_thresh, order, dataset, V, N1, N
     return calc_theta()
 
 
-# In[3]:
+# In[4]:
 
 
-def results_allglaciers(V, N1, N2):
+def results_allglaciers(download_csv, date_csv, centerline_csv, vel_csv, analysis_date, V, N1, N2):
     import numpy as np
     import os
     import pandas as pd    
@@ -342,32 +337,33 @@ def results_allglaciers(V, N1, N2):
     csvpaths = '/home/jukes/Documents/Sample_glaciers/'; basepath = '/media/jukes/jukes1/LS8aws/'; massorsize = "mass"
     
     #IMAGE DATES
-    datetime_df = pd.read_csv(csvpaths+'imgdates_SE.csv', sep=',', dtype=str, header=0, names=['Scene', 'datetimes'])
+    datetime_df = pd.read_csv(csvpaths+date_csv, sep=',', dtype=str, header=0, names=['Scene', 'datetimes'])
     print(datetime_df.shape)
-    analysis_date = str(datetime.datetime.now())[0:10]
-    analysis_date = analysis_date.replace('-', '_'); print(analysis_date)
-    #DELINEATION METRIC AND ORDER 
-    for file in os.listdir(csvpaths):
-        if analysis_date in file and file.endswith('.csv'):
-            print('found'); thefile = file
-    order_df = pd.read_csv(csvpaths+thefile, sep=',', dtype=str, header=1, usecols=[0,1,2,3,4])
-    order_df = order_df.dropna()
+          
+#     #DELINEATION METRIC AND ORDER 
+#     for file in os.listdir(csvpaths):
+#         if analysis_date in file and file.endswith('.csv'):
+#             print('found'); thefile = file
+#     order_df = pd.read_csv(csvpaths+thefile, sep=',', dtype=str, header=1, usecols=[0,1,2,3,4])
+#     order_df = order_df.dropna()
     
     #CENTERLINE INFO
-    centerline_df = pd.read_csv(csvpaths+'Boxes_coords_pathrows_SE.csv', sep=',', dtype=str, header=0)
+    centerline_df = pd.read_csv(csvpaths+centerline_csv, sep=',', dtype=str, header=0)
     centerline_df = centerline_df.set_index('BoxID')
     
     #GLACIER VELOCITIES
-    flowspeed_df= pd.read_csv(csvpaths+'Glacier_vel_measures_SE.csv', sep=',', dtype=str)
+    flowspeed_df= pd.read_csv(csvpaths+vel_csv, sep=',', dtype=str)
     flowspeed_df = flowspeed_df.set_index('BoxID')
     
-    BoxIDs = list(set(order_df.BoxID)) # List of BoxIDs
+    BoxIDs = list(pd.read_csv(csvpaths+download_csv, sep=',', dtype=str)['BoxID']) # List of BoxIDs
     
     for BOI in BoxIDs:
         print("Box"+BOI)
         metric = "Datfiles/"; imagepath = basepath+"Box"+BOI+"/rotated/"
-
-        order_box_df = order_df[order_df["BoxID"]==BOI].copy()
+        
+        order_box_df = pd.read_csv(csvpaths+'terminuspicks_Box'+BOI+'_'+analysis_date+'.csv', 
+                                   sep=',', dtype=str, usecols=[1,2,3,4,0], header = 1)
+#         order_box_df = order_df[order_df["BoxID"]==BOI].copy()
         order_box_df = order_box_df.drop('BoxID', axis=1)
         order_box_df = order_box_df.dropna()
 
@@ -536,7 +532,7 @@ def results_allglaciers(V, N1, N2):
         for df in nojumps:
             if len(df) == 0:
                 stop = 1
-                print('No points remaining. Processed stopped for Box'+BOI)
+                # print('No points remaining. Processed stopped for Box'+BOI)
                 
         if stop == 0:
             #GRAB HIGHEST ORDER PICK AFTER FILTERING
@@ -544,7 +540,7 @@ def results_allglaciers(V, N1, N2):
             for df in nojumps:
                     #grab unique dates
                     unique_dates = set(list(df['datetimes']))
-                    print(len(unique_dates))
+                    # print(len(unique_dates))
                     #grab highest orders:
                     order_list = []
                     for date in unique_dates:
@@ -558,22 +554,21 @@ def results_allglaciers(V, N1, N2):
             for i in range(0, len(highestorder_dfs)):
                 onepick_df = nojumps[i].merge(highestorder_dfs[i], how='inner', on=['datetimes', 'Order'])
                 onepick_dfs.append(onepick_df)
-                print(onepick_df.shape[0])
+                # print(onepick_df.shape[0])
 
             #PLOT AND SAVE
             fig, ax1 = plt.subplots(figsize=(12,4))
             markers = ['mo', 'ro', 'bo']
-#             for j in range(0, len(onepick_dfs)): # ALL THREE PLOT
-            for j in range(0, 1): # JUST CENTERLINE
+            for j in range(0, len(onepick_dfs)):
                 df = onepick_dfs[j];    print(len(df))
-                ax1.plot(df['datetimes'], df['tpos'], markers[j], markersize=5, alpha=0.8)
+                ax1.plot(df['datetimes'], df['tpos'], markers[j], markersize=5, alpha=0.7)
             #general plot parameters
             ax1.set_ylabel('Terminus position (m)', color='k', fontsize=12)
             ax1.set_title("Box"+BOI, fontsize=16); ax1.set_xlabel('Date', fontsize=12)
             ax1.tick_params(axis='both', which='major', labelsize=12)
             #save figure
-            plt.savefig(csvpaths+"/Figures/Termposition_LS8_m_Box"+BOI+"_"+analysis_date+".png", dpi=200)
             plt.legend(['1/2', '1/4', '3/4'])
+            plt.savefig(csvpaths+"/Figures/Termposition_LS8_m_Box"+BOI+"_"+analysis_date+".png", dpi=200)
             plt.show()
 
             flowlines = ['flowline50', 'flowline25', 'flowline75']
