@@ -92,8 +92,9 @@ def calc_changerates1(df):
             # when previous time point is found, grab the terminus positions
             prev_df = df[df['datetimes'] == t_prev].copy(); positions = list(prev_df.tpos)
             
-            #if there are multiple, grab the average of all of them
-            x_prev = np.nanmean(np.array(positions));
+            #if there are multiple, grab the average or median of all of them
+            #x_prev = np.nanmean(np.array(positions));
+            x_prev = np.nanmedian(np.array(positions))
             
             #calculate terminus change for center (dx) in meters and time change (dt in days)
             dx = x - x_prev                  
@@ -230,26 +231,22 @@ def midpoint(x1, y1, x2, y2):
 # In[19]:
 
 
-def calc_theta():
-    import pandas as pd; import numpy as np
-    #MANUAL TERMINUS POSITIONS
-    manual_path = '/media/jukes/jukes1/Manual/'; manual_filename = 'manual_tpos.csv'
-    auto_path = '/home/jukes/Documents/Sample_glaciers/'
-    manual_df = pd.read_csv(manual_path+manual_filename, dtype=str,sep=',')
+def calc_theta(manual_df):
+    import pandas as pd
+    import numpy as np
     #SPLIT INTO 3 DATAFRAMES FOR 3 FLOWLINES:
+    auto_path = '/home/jukes/Documents/Sample_glaciers/'
     manual50 = manual_df[['BoxID','datetimes', 'intersect_x', 'intersect_y', 
                                           'tpos50']].copy().reset_index(drop=True).rename(columns={"tpos50": "tpos"})
     manual25 = manual_df[['BoxID','datetimes', 'intersect_x', 'intersect_y', 
                                           'tpos25']].copy().reset_index(drop=True).rename(columns={"tpos25": "tpos"})
     manual75 = manual_df[['BoxID','datetimes', 'intersect_x', 'intersect_y',
                                           'tpos75']].copy().reset_index(drop=True).rename(columns={"tpos75": "tpos"})
-    #SIGMAS (DATA ERRORS) ALONG EACH FLOWLINE (FROM INTERANALYST DIFFERENCES)
-    sigmas = [35.02, 27.65, 30.45]; sigma_avg = np.average(sigmas);
-    
-    theta1s = []; theta2s = []
+    thetas = []
     #FOR EACH GLACIER BOXID:
     BoxIDs = list(set(manual_df.BoxID))
     for BoxID in BoxIDs:
+        print("Box"+BoxID)
         #grab automated tpos
         auto50 = pd.read_csv(auto_path+'Tpos_Box'+BoxID+'_flowline50_filtered.csv', dtype=str,sep=',')
         auto25 = pd.read_csv(auto_path+'Tpos_Box'+BoxID+'_flowline25_filtered.csv', dtype=str,sep=',')
@@ -259,61 +256,39 @@ def calc_theta():
         manual50_df = manual50[manual50.BoxID == BoxID].copy()
         manual25_df = manual25[manual25.BoxID == BoxID].copy()
         manual75_df = manual75[manual75.BoxID == BoxID].copy()
-        manualdfs = [manual50, manual25, manual75]
+        manualdfs = [manual50_df, manual25_df, manual75_df]
         #calculate difference in terminus positions along the three flowlines
         lists3 = []; lists3_norm = []
         for i in range(0, len(manualdfs)):
-            man = manualdfs[i]; auto = autodfs[i]; sigma = sigmas[i]
+            man = manualdfs[i]; auto = autodfs[i]; # sigma = sigmas[i]
             compare_df = man.merge(auto, how='inner', on=['datetimes'])
             #cast terminus positions into float values
             compare_df = compare_df.astype({'tpos_x': 'float', 'tpos_y': 'float'})
             #subtract the absolute value of the difference and put into df as a column named "diff"
             compare_df['diff'] = abs(np.array(compare_df.tpos_x) - np.array(compare_df.tpos_y))  
-            compare_df['diff/sigma'] = abs(np.array(compare_df.tpos_x) - np.array(compare_df.tpos_y))/sigma
             lists3.append(list(compare_df['diff']))  
-            lists3_norm.append(list(compare_df['diff/sigma']))
         diff_all = lists3[0]+lists3[1]+lists3[2] #list of all the differences between manual and auto
-        normalizeddiff_all = lists3_norm[0]+lists3_norm[1]+lists3_norm[2] #list of all the normalized differences
-        N = len(manual_df) #number of total terminus position points detected
-        Nfrac = N/(len(manual50_df)+len(manual25_df)+len(manual75_df)) # fraction of manual delineations that automated method picked up
+    #     normalizeddiff_all = lists3_norm[0]+lists3_norm[1]+lists3_norm[2] #list of all the normalized differences
+
+        N = len(diff_all) #number of total intersections
 
         #CALCULATE THETA:
-        theta1 = (1.0/N)*np.sum(normalizeddiff_all) #sum of normalized differences along flowlines
-        theta2 = (1.0/N)*(np.sum(diff_all)/sigma_avg) #sum of differences normalized by average sigma
-        theta1s.append(theta1); theta2s.append(theta2)
-        #print("Theta values:",theta1, theta2)   
+        theta = (1.0/N)*(np.nansum(diff_all)) #sum of differences normalized by average sigma
+        thetas.append(theta)
+        print("Theta values:",theta)
         
+                
     #CALCULATE OVERALL THETA
-    theta1_all = np.average(theta1s); theta2_all = np.average(theta2s)
-#     #organize data in dataframe
-#     column_titles = ['Theta_avg']+BoxIDs
-#     theta1_for_df = [theta1_all]+theta1s; theta2_for_df = [theta2_all]+theta2s
-#     #write to csv
-#     theta_df = pd.DataFrame(list(zip(column_titles, theta1_for_df, theta2_for_df)), 
-#                  columns=['ID', 'theta1', 'theta2'])
-#     return theta_df 
-    return theta2_all
+    theta_all = np.nanmean(thetas)
+    #organize data in dataframe
+    column_titles = ['Theta_avg']+BoxIDs
+    theta_for_df = [theta_all]+thetas
+    #write to csv
+    theta_df = pd.DataFrame(list(zip(column_titles, theta_for_df)), 
+                 columns=['ID', 'theta'])
+    
+    return theta_all
 
-
-# In[20]:
-
-
-def objective_func(size_thresh, mod_thresh, arg_thresh, order, dataset, V, N1, N2):
-    import subprocess
-    import os
-    inputIDs = " ".join(['001', '002', '120', '174', '259']) # the BoxIDs to input
-    #from thresholds, pick the lines
-    terminus_pick = '/home/akhalil/src/xsmurf-2.7/main/xsmurf -nodisplay /home/jukes/Documents/Scripts/terminus_pick'+str(order)+'.tcl '+str(size_thresh)+' '+str(mod_thresh)+' '+str(arg_thresh)+' '+str(dataset)+' '+str(inputIDs)
-    subprocess.call(terminus_pick, shell=True)
-#     #from the lines, get the results by calling the .py script in terminal
-#     results_allglaciers = '/home/jukes/anaconda3/bin/python3.7 /home/jukes/automated-glacier-terminus/Results_allglaciers.py'
-#     subprocess.call(results_allglaciers, shell=True)
-    # from the lines, get the results using the new result_all glaciers function:
-    os.chdir('/home/jukes/automated-glacier-terminus')
-    from automated_terminus_functions import results_allglaciers
-    results_allglaciers(V,N1,N2)
-    #calculate value of theta
-    return calc_theta()
 
 
 # In[4]:
@@ -339,13 +314,6 @@ def results_allglaciers(download_csv, date_csv, centerline_csv, vel_csv, analysi
     #IMAGE DATES
     datetime_df = pd.read_csv(csvpaths+date_csv, sep=',', dtype=str, header=0, names=['Scene', 'datetimes'])
     print(datetime_df.shape)
-          
-#     #DELINEATION METRIC AND ORDER 
-#     for file in os.listdir(csvpaths):
-#         if analysis_date in file and file.endswith('.csv'):
-#             print('found'); thefile = file
-#     order_df = pd.read_csv(csvpaths+thefile, sep=',', dtype=str, header=1, usecols=[0,1,2,3,4])
-#     order_df = order_df.dropna()
     
     #CENTERLINE INFO
     centerline_df = pd.read_csv(csvpaths+centerline_csv, sep=',', dtype=str, header=0)
@@ -359,21 +327,22 @@ def results_allglaciers(download_csv, date_csv, centerline_csv, vel_csv, analysi
     
     for BOI in BoxIDs:
         print("Box"+BOI)
-        metric = "Datfiles/"; imagepath = basepath+"Box"+BOI+"/rotated/"
+        metric = "Datfiles_c1/"; imagepath = basepath+"Box"+BOI+"/rotated_c1/"
         
         order_box_df = pd.read_csv(csvpaths+'terminuspicks_Box'+BOI+'_'+analysis_date+'.csv', 
                                    sep=',', dtype=str, usecols=[1,2,3,4,0], header = 1)
 #         order_box_df = order_df[order_df["BoxID"]==BOI].copy()
         order_box_df = order_box_df.drop('BoxID', axis=1)
         order_box_df = order_box_df.dropna()
+        print(order_box_df.shape)
 
         #GRAB INFO FROM IMAGE FILES
         image_arrays = []; dats = []; trimdats = []; imgnames = []; boxids = []; scales = []
         imgfiles = os.listdir(imagepath)
         for imgfile in imgfiles:
             #grab image files and append to images list
-            if imgfile.endswith(BOI+".png"):
-                image = mpimg.imread(imagepath+imgfile); imgname = imgfile[0:-4]; scenename = imgname[2:23]
+            if imgfile.endswith(BOI+"_PS.pgm"):
+                image = mpimg.imread(imagepath+imgfile); imgname = imgfile[0:-4]; scenename = imgname[2:42]
                 pathtodat = imagepath+imgname+".pgm_max_gaussian/"+metric
                 datfiles = os.listdir(pathtodat)
                 #if there are datfiles, grab the trimmed and non-trimmed files
@@ -430,7 +399,7 @@ def results_allglaciers(download_csv, date_csv, centerline_csv, vel_csv, analysi
             trimdat = row['Trimmed_dat_filename']; dat = row['Dat_filename']; scene = row['Scene']    
             #CALCULATE TERMINUS POSITION
             #load in dat files and calculate intersection points
-            datpath = imagepath+"R_"+scene+"_B8_PS_Buffer"+BOI+".pgm_max_gaussian/"+metric
+            datpath = imagepath+"R_"+scene+"_B8_Buffer"+BOI+"_PS.pgm_max_gaussian/"+metric
         #     term_trimdat = np.loadtxt(datpath+trimdat)
             term_dat = np.loadtxt(datpath+dat)                          
             intersect_xs = []; intersect_xs_25 = []; intersect_xs_75 = []
@@ -579,12 +548,205 @@ def results_allglaciers(download_csv, date_csv, centerline_csv, vel_csv, analysi
 
 # In[ ]:
 
+def resize_pngs(path):
+    import numpy as np
+    import os
+    from PIL import Image
+    import matplotlib.image as mpimg
+    import matplotlib.pyplot as plt
+    
+    dimensions_x = []; dimensions_y = []
+    images = os.listdir(path)
+    for image in images:
+        if image.endswith('.png'):
+#             print(image)
+            img = mpimg.imread(path+image)
+            dimensions_x.append(img.shape[1]); dimensions_y.append(img.shape[0])
 
+    #find minimum dimensions
+    min_y = np.min(dimensions_y); min_x = np.min(dimensions_x)
+    index_y = dimensions_y.index(min_y); index_x = dimensions_x.index(min_x)
+    
+    if index_x != index_y:
+        print('Something is funky with the image dimesions for this Box')
+    else:
+        #crop each image if the dimensions are larger than the minimum
+        for image in images:
+            if image.endswith('.png'):
+                img = mpimg.imread(path+image)
+                if img.shape[1] > min_x or img.shape[0] > min_y:
+                    #calculate difference, and divide by 2 to get amount of rows to remove by
+                    diffx_half = (img.shape[1] - min_x )/2; diffy_half = (img.shape[0] - min_y)/2
 
+                    #if the difference is a half pixel, make sure to remove the full value from the first side only
+                    if int(diffx_half) != diffx_half:
+                        #remember for image slicing y is the first dimension, x is the second
+                        img_cropx = img[:, int(diffx_half):-int(diffx_half)-1]
+                    else: #otherwise remove it from both sides:
+                        img_cropx = img[:, int(diffx_half):-int(diffx_half)]
+
+                    #same for y
+                    if int(diffy_half) != diffy_half:   
+                        img_cropy = img_cropx[int(diffy_half):-int(diffy_half)-1, :]
+                    else:
+                        img_cropy = img_cropx[int(diffy_half):-int(diffy_half), :]
+
+                    #save over original images
+#                     resized = Image.fromarray(img_cropy)
+#                     resized.save(downloadpath+"Box"+BoxID+'/rotated_c1/'+image)
+#                     img_cropy.imsave(downloadpath+"Box"+BoxID+'/rotated_c1/'+image)
+                    resized = np.ascontiguousarray(img_cropy)
+                    plt.imsave(path+image[:-4]+'.png', resized, cmap='gray')
 
 
 # In[ ]:
+def terminuspick_1glacier(BoxID, inputs, CPU):
+    import subprocess
+    order = inputs[0]
+    size_thresh = inputs[1]
+    mod_thresh = inputs[2]
+    arg_thresh = inputs[3]
+    tpick = 'taskset '+CPU+' /home/akhalil/src/xsmurf-2.7/main/xsmurf -nodisplay /home/jukes/Documents/Scripts/terminus_pick'+str(order)+'_1glacier.tcl '+str(size_thresh)+' '+str(mod_thresh)+' '+str(arg_thresh)+' '+str(BoxID)
+    out = subprocess.Popen(tpick, shell=True)
+    PID = out.pid
+    print(PID+1)
+    
+# In[ ]:
+def terminuspick_1glacier_opt(BoxID, inputs, CPU):
+    import subprocess
+    order = inputs[0]
+    size_thresh = inputs[1]
+    mod_thresh = inputs[2]
+    arg_thresh = inputs[3]
+    dataset = inputs[4]
+    tpick = 'taskset '+CPU+' /home/akhalil/src/xsmurf-2.7/main/xsmurf -nodisplay /home/jukes/Documents/Scripts/terminus_pick'+str(order)+'_1glacier.tcl '+str(size_thresh)+' '+str(mod_thresh)+' '+str(arg_thresh)+' '+str(BoxID)+' '+str(dataset)
+    out = subprocess.Popen(tpick, shell=True)
+    PID = out.pid
+    print(PID+1)
 
+
+# In[20]:
+
+
+def objective_func(size_thresh, mod_thresh, arg_thresh, order, dataset, V, N1, N2, date):
+    import subprocess
+    import os
+    import pandas as pd
+    from multiprocessing import Barrier
+    os.chdir('/home/jukes/automated-glacier-terminus')
+    from automated_terminus_functions import results_allglaciers, terminuspick_1glacier_opt, parallel
+    
+    num_CPUs = 8; BoxIDs = ['001', '002', '120', '174', '259']
+    num_glaciers = len(BoxIDs); 
+
+    parallel_mp(num_CPUs, num_glaciers, terminuspick_1glacier_opt, [order, size_thresh, mod_thresh, arg_thresh, dataset], BoxIDs, True)
+    
+    # from the lines, get the results using the new result_all glaciers function:
+    results_allglaciers('Images_downloaded_sample5.csv','imgdates_sample10.csv', 'Boxes_coords_pathrows_sample5.csv','Glacier_vel_measures_sample10.csv', date, V,N1,N2)
+    
+    #calculate value of theta
+    manual_df = pd.read_csv('/media/jukes/jukes1/Manual/manual_tpos_c1.csv', dtype=str,sep=',')
+    return calc_theta(manual_df)
+
+# In[ ]:
+def scr_gaussian_1image(image, BoxID, CPU):
+    import subprocess
+    scr = 'taskset '+CPU+' /home/akhalil/src/xsmurf-2.7/main/xsmurf -nodisplay /home/jukes/Documents/Scripts/scr_gaussian_image.tcl '+BoxID+' '+image
+    out = subprocess.Popen(scr, shell=True)
+    PID = out.pid
+    return(PID+1)
+    
+# In[ ]:
+def parallel_mp(num_CPUs, num_items, target, targetargs, listofitems, barrier):
+    import math
+    from multiprocessing import Process, Barrier
+    import subprocess
+    import psutil
+    CPUs = ['0x1', '0x2', '0x4', '0x8', '0x10', '0x20', '0x40', '0x80']
+    num_batches = math.ceil(num_items/num_CPUs)
+    num_lastbatch = num_CPUs - (num_batches*num_CPUs - num_items)
+    
+    counter = 0
+    for i in range(1, num_batches+1):
+        if i < num_batches:
+                print("Batch", i)
+                #begin multiproccess
+                jobs = []; PIDs = []
+                for j in range(1, num_CPUs+1):
+                    item = listofitems[counter] # grab the item
+                    p = Process(target=target, args=(item, targetargs, CPUs[j-1]))
+                    p.start() # start the job for the image
+                    jobs.append(p)
+                    PIDs.append(p.pid)
+                    print("CPU", j, ':', item); 
+                    counter = counter+1
+                
+                for l in range(0, len(jobs)):
+                    if psutil.pid_exists(PIDs[l]):
+                        job = jobs[l]; job.join() # wait on all the jobs to finish
+        else:
+                print("Batch", i)
+                jobs_lb = []; PIDs_lb = []
+                for k in range(1, num_lastbatch+1):
+                    item = listofitems[counter] # grab the item
+                    p = Process(target=target, args=(item, targetargs, CPUs[k-1]))
+                    p.start() # start the job for the image
+                    jobs_lb.append(p)
+                    PIDs_lb.append(p.pid)
+                    print("CPU", k,':', item); 
+                    counter = counter+1
+                for q in range(0, len(jobs_lb)):
+                    if psutil.pid_exists(PIDs_lb[q]):
+                        job = jobs_lb[q]; job.join() # wait on all the jobs to finish
+#                 for job in jobs_lb:
+#                     job.join() # wait on jobs to finish
+    if barrier == True:
+        b = Barrier(num_lastbatch-1)
+        b.wait()
+        
+# In[ ]:
+
+def parallel(num_CPUs, num_items, target, targetargs, listofitems):
+    import math
+    import subprocess
+    os.chdir('/home/jukes/automated-glacier-terminus')
+    from automated_terminus_functions import target
+    
+    num_batches = math.ceil(num_items/num_CPUs)
+    num_lastbatch = num_CPUs - (num_batches*num_CPUs - num_items)
+    
+    counter = 0
+    for i in range(1, num_batches+1):
+        if i < num_batches:
+                print("Batch", i)
+                #begin multiproccess
+                jobs = []
+                for j in range(1, num_CPUs+1):
+                    item = listofitems[counter] # grab the item
+                    PID = scr_gaussian_1image(item, BoxID)
+                    jobs.append(PID)
+                    print("CPU", j, ':', item); 
+                    counter = counter+1
+                
+                for job in jobs:
+                    job.join() # wait on all the jobs to finish
+        else:
+                print("Batch", i)
+                jobs_lb = []
+                for k in range(1, num_lastbatch+1):
+                    item = listofitems[counter] # grab the item
+                    p = Process(target=target, args=(item, targetargs))
+                    p.start() # start the job for the image
+                    jobs_lb.append(p)
+                    print("CPU", k,':', item); 
+                    counter = counter+1
+                
+                for job in jobs_lb:
+                    job.join() # wait on jobs to finish
+    if barrier == True:
+        b = Barrier(num_lastbatch-1)
+        b.wait()
+        
 
 
 

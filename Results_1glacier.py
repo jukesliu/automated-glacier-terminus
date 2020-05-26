@@ -11,7 +11,7 @@ import sys
 inputs=sys.argv[1:]
 print(inputs)
 
-if len(inputs) != 8:
+if len(inputs) != 9:
     print("Incorrect number of input arguments.")
 else:
     # read in inputs
@@ -21,6 +21,7 @@ else:
     vel_csv = inputs[3]
     analysis_date = inputs[4]
     V = int(inputs[5]); N1 = int(inputs[6]); N2 = int(inputs[7])
+    BoxID = inputs[8]
     
     #import packages and functions
     import numpy as np
@@ -52,10 +53,8 @@ else:
     flowspeed_df= pd.read_csv(csvpaths+vel_csv, sep=',', dtype=str)
     flowspeed_df = flowspeed_df.set_index('BoxID')
     
-    BoxIDs = list(pd.read_csv(csvpaths+download_csv, sep=',', dtype=str)['BoxID']) # List of BoxIDs
-    
-    for BOI in BoxIDs:
-        print("Box"+BOI)
+    for BOI in [BoxID]:
+        print("Box"+BOI+ "results analysis")
         metric = "Datfiles_c1/"; imagepath = basepath+"Box"+BOI+"/rotated_c1/"
         
         order_box_df = pd.read_csv(csvpaths+'terminuspicks_Box'+BOI+'_'+analysis_date+'.csv', 
