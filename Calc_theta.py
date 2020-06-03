@@ -35,6 +35,7 @@ if True==True:
         manual25_df = manual25[manual25.BoxID == BoxID].copy()
         manual75_df = manual75[manual75.BoxID == BoxID].copy()
         manualdfs = [manual50_df, manual25_df, manual75_df]
+              
         #calculate difference in terminus positions along the three flowlines
         lists3 = []; lists3_norm = []
         for i in range(0, len(manualdfs)):
@@ -45,13 +46,17 @@ if True==True:
             #subtract the absolute value of the difference and put into df as a column named "diff"
             compare_df['diff'] = abs(np.array(compare_df.tpos_x) - np.array(compare_df.tpos_y))  
             lists3.append(list(compare_df['diff']))  
+            
         diff_all = lists3[0]+lists3[1]+lists3[2] #list of all the differences between manual and auto
-    #     normalizeddiff_all = lists3_norm[0]+lists3_norm[1]+lists3_norm[2] #list of all the normalized differences
 
-        N = len(diff_all) #number of total intersections
+        comparison_tpts = len(diff_all) #number of total intersections
+        num_possible = np.max([len(lists3[0]), len(lists3[1]), len(lists3[2])])*3 #grab total possible number of intersections
+        frac_intersect = comparison_tpts/num_possible
+        
+        N = num_possible/3 #number of possible timepoints (i.e. images)
 
         #CALCULATE THETA:
-        theta = (1.0/N)*(np.nansum(diff_all)) #sum of differences normalized by average sigma
+        theta = 1/(frac_intersect**3)*(np.nansum(diff_all)/N) 
         thetas.append(theta)
                 
     #CALCULATE OVERALL THETA
