@@ -2,7 +2,7 @@
 
 Created and managed by Jukes Liu (jukesliu@u.boisestate.edu).
 
-This repository contains code to automatically delineate glacier terminus positions in Landsat-8 imagery using the 2D Wavelet Transform Modulus Maxima (WTMM) segmentation method for Greenland's peripheral glaciers. 
+This repository contains code to automatically delineate glacier terminus positions for Greenland's peripheral glaciers visible in Landsat-8 imagery using the 2D Wavelet Transform Modulus Maxima (WTMM) segmentation method. 
 
 Certain sections of code require the installation of GDAL command line functionality. The 2D WTMM analysis requires installation of Xsmurf software. Please contact andre.khalil@maine.edu or jukesliu@u.boisestate.edu for ways to obtain Xsmurf.
 
