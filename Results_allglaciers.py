@@ -259,10 +259,10 @@ else:
 
             #PLOT AND SAVE
             fig, ax1 = plt.subplots(figsize=(12,4))
-            markers = ['mo', 'ro', 'bo']
+            colors = pl.cm.viridis(np.linspace(0,0.5,3)) # generate 3 centerline colors using Dark2 scheme
             for j in range(0, len(onepick_dfs)):
                 df = onepick_dfs[j];    print(len(df))
-                ax1.plot(df['datetimes'], df['tpos'], markers[j], markersize=5, alpha=0.7)
+                ax1.plot(df['datetimes'], df['tpos'], marker = 'o', color=colors[j], markersize=5, alpha=0.7)
             #general plot parameters
             ax1.set_ylabel('Terminus position (m)', color='k', fontsize=12)
             ax1.set_title("Box"+BOI, fontsize=16); ax1.set_xlabel('Date', fontsize=12)

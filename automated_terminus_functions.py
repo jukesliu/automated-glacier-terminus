@@ -295,6 +295,7 @@ def calc_theta(manual_df):
 
 
 def results_allglaciers(download_csv, date_csv, centerline_csv, vel_csv, analysis_date, V, N1, N2):
+    #import packages and functions
     import numpy as np
     import os
     import pandas as pd    
@@ -309,7 +310,8 @@ def results_allglaciers(download_csv, date_csv, centerline_csv, vel_csv, analysi
     os.chdir('/home/jukes/automated-glacier-terminus')
     from automated_terminus_functions import calc_changerates1, to_datetimes, within, remove_dips, remove_jumps
 
-    csvpaths = '/home/jukes/Documents/Sample_glaciers/'; basepath = '/media/jukes/jukes1/LS8aws/'; massorsize = "mass"
+    csvpaths = '/home/jukes/Documents/Sample_glaciers/'
+    basepath = '/media/jukes/jukes1/LS8aws/'; massorsize = "mass"
     
     #IMAGE DATES
     datetime_df = pd.read_csv(csvpaths+date_csv, sep=',', dtype=str, header=0, names=['Scene', 'datetimes'])
@@ -401,7 +403,8 @@ def results_allglaciers(download_csv, date_csv, centerline_csv, vel_csv, analysi
             #load in dat files and calculate intersection points
             datpath = imagepath+"R_"+scene+"_B8_Buffer"+BOI+"_PS.pgm_max_gaussian/"+metric
         #     term_trimdat = np.loadtxt(datpath+trimdat)
-            term_dat = np.loadtxt(datpath+dat)                          
+            term_dat=np.loadtxt(datpath+dat)
+                                      
             intersect_xs = []; intersect_xs_25 = []; intersect_xs_75 = []
             intersect_ys = []; intersect_ys_25 = []; intersect_ys_75 = []
 
@@ -410,18 +413,19 @@ def results_allglaciers(download_csv, date_csv, centerline_csv, vel_csv, analysi
                 x = c_x[j]; y = c_y[j]; y25 = c_y_25[j]; y75 = c_y_75[j]        
                 interval = 0.6
                 #where are the intersections with the terminus pick?
-        #         for dat_x, dat_y in term_trimdat:
-                for dat_x, dat_y in term_dat:
-                    #midway centerline
-                    if within(dat_x, x, interval) and within (dat_y, y, interval):
-                        #intersect_x = dat_x; intersect_y = dat_y; intersect_found = True
-                        intersect_xs.append(dat_x); intersect_ys.append(dat_y)            
-                    #1/4th centerline
-                    if within(dat_x, x, interval) and within (dat_y, y25, interval):
-                        intersect_xs_25.append(dat_x); intersect_ys_25.append(dat_y)              
-                    #3/4th centerline
-                    if within(dat_x, x, interval) and within (dat_y, y75, interval):
-                        intersect_xs_75.append(dat_x); intersect_ys_75.append(dat_y)
+                if len(np.shape(term_dat)) == 2: # if it's a 2D array
+                    for dat_x, dat_y in term_dat:
+                        #midway centerline
+                        if within(dat_x, x, interval) and within (dat_y, y, interval):
+                            #intersect_x = dat_x; intersect_y = dat_y; intersect_found = True
+                            intersect_xs.append(dat_x); intersect_ys.append(dat_y)            
+                        #1/4th centerline
+                        if within(dat_x, x, interval) and within (dat_y, y25, interval):
+                            intersect_xs_25.append(dat_x); intersect_ys_25.append(dat_y)              
+                        #3/4th centerline
+                        if within(dat_x, x, interval) and within (dat_y, y75, interval):
+                            intersect_xs_75.append(dat_x); intersect_ys_75.append(dat_y)
+                    
             #for 50 centerline
             #if no intersections are found with the terminus line, append Nans
             if len(intersect_xs) == 0:
@@ -544,6 +548,7 @@ def results_allglaciers(download_csv, date_csv, centerline_csv, vel_csv, analysi
             for k in range(0, len(onepick_dfs)):
                 df = onepick_dfs[k];
                 df.to_csv(path_or_buf = csvpaths+'Tpos_Box'+BOI+'_'+flowlines[k]+'_filtered.csv', sep=',')
+
 
 
 # In[ ]:
