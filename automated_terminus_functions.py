@@ -4,14 +4,6 @@
 # # Functions written for automated-glacier-terminus detection
 # Jukes Liu. _Github: julialiu18_
 # 
-#  - calc_changerates3
-#  - calc_changerates1
-#  - remove_dips
-#  - remove_jumps
-#  - within
-#  - distance
-#  - to_datetimes
-#  - midpoint
 
 # In[10]:
 
