@@ -317,8 +317,7 @@ def results_allglaciers(download_csv, date_csv, centerline_csv, vel_csv, analysi
     flowspeed_df= pd.read_csv(csvpaths+vel_csv, sep=',', dtype=str)
     flowspeed_df = flowspeed_df.set_index('BoxID')
     
-    BoxIDs = list(pd.read_csv(csvpaths+download_csv, sep=',', dtype=str)['BoxID']) # List of BoxIDs
-    
+    BoxIDs = list(pd.read_csv(csvpaths+centerline_csv, sep=',', dtype=str)['BoxID']) # List of BoxIDs
     for BOI in BoxIDs:
         print("Box"+BOI)
         metric = "Datfiles_c1/"; imagepath = basepath+"Box"+BOI+"/rotated_c1/"
@@ -522,11 +521,12 @@ def results_allglaciers(download_csv, date_csv, centerline_csv, vel_csv, analysi
                 # print(onepick_df.shape[0])
 
             #PLOT AND SAVE
+            colors = pl.cm.viridis(np.linspace(0,0.5,3)) # generate 3 centerline 
             fig, ax1 = plt.subplots(figsize=(12,4))
-            markers = ['mo', 'ro', 'bo']
+            
             for j in range(0, len(onepick_dfs)):
                 df = onepick_dfs[j];    print(len(df))
-                ax1.plot(df['datetimes'], df['tpos'], markers[j], markersize=5, alpha=0.7)
+                ax1.plot(df['datetimes'], df['tpos'], color=colors[j], marker='o', markersize=6, linewidth=0, alpha=0.7)
             #general plot parameters
             ax1.set_ylabel('Terminus position (m)', color='k', fontsize=12)
             ax1.set_title("Box"+BOI, fontsize=16); ax1.set_xlabel('Date', fontsize=12)
