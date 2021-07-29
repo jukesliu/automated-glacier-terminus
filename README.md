@@ -5,9 +5,9 @@ Managed by Jukes Liu (jukesliu@u.boisestate.edu).
 This repository contains code to automatically delineate glacier terminus positions in Landsat 8 imagery using the adapted 2D Wavelet Transform Modulus Maxima (WTMM) segmentation method (Liu et al., 2021).
 
 Set up your directory structure as follows: <br />
-main_folder <br />
+**main_folder <br />
 |---- glacier_files <br />
-|---- LS8aws <br />
+|---- LS8aws <br />**
 
 
 Workflow:
