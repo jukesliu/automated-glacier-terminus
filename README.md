@@ -1,11 +1,18 @@
 # automated-glacier-terminus
 
-Created and managed by Jukes Liu (jukesliu@u.boisestate.edu).
+Managed by Jukes Liu (jukesliu@u.boisestate.edu).
 
-This repository contains code to automatically delineate glacier terminus positions for Greenland's peripheral glaciers visible in Landsat-8 imagery using the 2D Wavelet Transform Modulus Maxima (WTMM) segmentation method. 
+This repository contains code to automatically delineate glacier terminus positions in Landsat 8 imagery using the adapted 2D Wavelet Transform Modulus Maxima (WTMM) segmentation method (Liu et al., 2021).
 
-Certain sections of code require the installation of GDAL command line functionality. The 2D WTMM analysis requires installation of Xsmurf software. Please contact andre.khalil@maine.edu or jukesliu@u.boisestate.edu for ways to obtain Xsmurf.
+Set up your directory structure as follows:
+main_folder
+|---- glacier_files
+|---- LS8aws
 
-The Jupyter notebooks should be run in order 1, 2, and then 3. Change path names to reflect the file structure on your computer. 
 
-This repository is updated regularly, so stay tuned for user-friendly adjustments to the code!
+Workflow:
+1) Obtain boxes over each glacier's terminus area as shapefiles. Name them _BoxNameofglacier.shp_ and place in glacier_files. When the BoxNameofglacier folders are generated automatically in preprocess.ipynb, move them into those folders. OPTIONAL: Repeat for each glacier's Randolph Glacier Outline if available. Name them _RGI_BoxNameofglacier.shp_.
+2) Run steps in preprocess.ipynb which will downlaod the Landsat 8 image subsets and prep them for WTMM analysis.
+3) Run WTMM analysis in WTMM_terminuspick.ipynb.
+4) Run steps in analyze_WTMM_results.ipynb to generate the terminus position timeseries along 3 auto-generated flowlines.
+

@@ -286,7 +286,7 @@ def calc_theta(manual_df):
 # In[4]:
 
 
-def results_allglaciers(download_csv, date_csv, centerline_csv, vel_csv, analysis_date, V, N1, N2):
+def results_allglaciers(date_csv, centerline_csv, vel_csv, analysis_date, V, N1, N2):
     #import packages and functions
     import numpy as np
     import os
