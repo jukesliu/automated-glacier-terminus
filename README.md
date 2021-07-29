@@ -6,7 +6,9 @@ This repository contains code to automatically delineate glacier terminus positi
 
 Set up your directory structure as follows:
 main_folder
+
 |---- glacier_files
+
 |---- LS8aws
 
 
