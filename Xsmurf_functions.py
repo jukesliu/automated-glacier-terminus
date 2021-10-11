@@ -85,6 +85,27 @@ def minterp(lx,ly,dx_norm,dy_norm,i):
 
 # In[1]:
 
+def pad_square(nparray):
+    import numpy as np
+    
+    # Pad an array to be square if not square
+    # INPUT: the array
+    # OUTPUT: the square (padded) array
+    [ly,lx] = nparray.shape
+    if lx > ly:
+        zeros = np.zeros((lx,lx))
+        zeros[:ly,:lx] = nparray
+    elif ly > lx:
+        zeros = np.zeros((ly,ly))
+        zeros[:ly,:lx] = nparray
+    else:
+        zeros = nparray
+    nparray = zeros
+    
+    return zeros
+
+
+# In[1]:
 
 def wtmm2d(I,wavelet,scale):
     import numpy as np
@@ -119,21 +140,12 @@ def wtmm2d(I,wavelet,scale):
 #         print('Incorrect number of arguments. Syntax is [dx, dy, mm, m, a] = wtmm2d(I, wavelet, scale).')
      
 #     tic()
-    [lx,ly] = np.size(I) # grab image dimensions
+    I = pad_square(np.array(I))
     
-    # pad to make square
-    if lx > ly:
-        zeros = np.zeros((lx,lx))
-        zeros[:ly,:lx] = I
-    elif ly > lx:
-        zeros = np.zeros((ly,ly))
-        zeros[:ly,:lx] = I
-    else:
-        zeros = I
-    I = zeros
+#     print(I.shape)
     
     # calculate spatial frequencies based on scale
-    maxdim = np.max([lx,ly])
+    maxdim = I.shape[0] # either dimension is the maximum whne square
     delta = 1 
     K = 1/(maxdim*delta)
     fX = np.arange(-maxdim/2,maxdim/2,1)*K*scale
@@ -151,9 +163,7 @@ def wtmm2d(I,wavelet,scale):
         p = 2; sigmax = 1; sigmay = 1;
         psi = -(2*np.pi*(fx**2 + fy**2)**(p/2))*np.exp(-((sigmax*(fx))**2 + (sigmay*fy)**2)/2)
     else:
-        print('ERROR: "'+wavelet+'" is not a valid wavelet. Options are "gauss", "igauss", and "mexh".')
-          
-#     psi = psi[:lx, :ly] # grab portion of psi matching image dimensions 
+        print('ERROR: "'+wavelet+'" is not a valid wavelet. Options are "gauss", "igauss", and "mexh".') 
     
     # FFT the image
     F = ft2(I, delta);
@@ -163,8 +173,6 @@ def wtmm2d(I,wavelet,scale):
     # create derivative approximators
     gx = 1j*2*np.pi*fx
     gy = 1j*2*np.pi*fy
-#     gx = gx[:lx, :ly] # grab portion of gx matching image dimensions
-#     gy = gy[:lx, :ly] # grab portion of gy matching image dimensions
         
     # numerical aproximations of derivatives and in-place inverse FT
     dy = np.real(ift2(np.multiply(gx,f), delta))
@@ -175,7 +183,6 @@ def wtmm2d(I,wavelet,scale):
     a = np.arctan2(dy,dx)
 #     print(toc())
       
-    #################################################################################################
     # FIND MAXIMA USING INTERPOLATION OF M:
 #     tic()
     # Remove non-maxima to find edges
@@ -187,6 +194,8 @@ def wtmm2d(I,wavelet,scale):
     # compute normalized derivative WT values
     dx_norm = np.divide(dx,m)
     dy_norm = np.divide(dy,m)
+    
+    [ly,lx] = m.shape # grab lx and ly (now square)
     
     # imitate MATLAB looping order, along columns
     mshape = m.shape # store shape for reconstruction of original matrix
@@ -206,11 +215,15 @@ def wtmm2d(I,wavelet,scale):
         # remove small moduli
         if m[i] < err_norm:
             continue
+        
+#         print(np.mod(i,lx), np.floor(i/lx))
             
         # check if the nearest modulus value works
         if (np.abs(dx_norm[i]) > err_deriv) or (np.abs(dy_norm[i]) > err_deriv):
             xul = np.mod(i,lx) + dx_norm[i] + 0.5
             yul = np.floor(i/lx) + dy_norm[i] + 0.5
+            
+#             print(xul, yul)
                        
             if m[i] <= m[int(np.fix(xul) + np.fix(yul)*lx)]:
                 continue
@@ -255,6 +268,8 @@ def wtmm2d(I,wavelet,scale):
         ul = int(np.fix(x_interp) + np.fix(y_interp)*lx)
         m_interp = m[ul]*c00 + m[ul+1]*c10 + m[ul+lx]*c01 + m[ul+lx+1]*c11 # +1 removed from indexing
         
+#         print(ul)
+        
         if m[i] <= m_interp:
             continue
         
@@ -282,9 +297,7 @@ def wtmm2d(I,wavelet,scale):
     mm = mm[:ly,:lx]; m = m[:ly,:lx]; a = a[:ly,:lx]
 
 #     print(toc())
-    
     return dx, dy, mm, m, a
-
 
 # In[9]:
 
@@ -297,6 +310,8 @@ def emask(box_array, var):
 #     - var: the variable matrix to mask (e.g. mm, a)
 # OUTPUTS:
 #     - maskedvar: the masked variable matrix
+
+    box_array = pad_square(box_array) # pad the box_array to be square if not square
 
     if box_array.shape == var.shape: # check that the dimensions are the same
         maskedvar = np.multiply(box_array, var) # multiply the two elementwise           
@@ -465,7 +480,7 @@ def wtmmchains(mm, a, keepClosed, scale):
         newchain = chain(size, linemeanmod, mass, scaledmass, argArr[:idx], xArr[:idx], yArr[:idx]) 
         cmm.append(newchain) # store it
         
-    print('Chaining done.')
+#     print('Chaining done.')
     
     # remove empty cmm entries 
     return cmm
