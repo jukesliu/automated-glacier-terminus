@@ -474,7 +474,7 @@ def wtmmchains(mm, a, keepClosed, scale):
         # calculate chain parameters
         linemeanmod = np.nanmean(modArr[:idx]) # linemeanmod
         mass = linemeanmod*size # mass = lineameanmod*size
-        scaledmass = mass/(2**scale) # metric defined in Liu et al., (2021)
+        scaledmass = mass/(2**scale) # divided by binary scale
         
         # create chain object
         newchain = chain(size, linemeanmod, mass, scaledmass, argArr[:idx], xArr[:idx], yArr[:idx]) 
