@@ -72,17 +72,6 @@ def recon(arr_shape, arr_raveled):
         arr_recon[:,l] = arr_raveled[linidx] # grab the raveled array values and enter into column
     return arr_recon
 
-
-# maxima interpolation
-def minterp(lx,ly,dx_norm,dy_norm,i):
-    import numpy as np
-    # bilinear interpolation
-    x_interp = np.mod(i,lx) + dx_norm[i+1]
-    y_interp = np.floor(i/lx) + dy_norm[i+1]
-    
-    return x_interp, y_interp      
-
-
 # In[1]:
 
 def pad_square(nparray):
@@ -378,7 +367,7 @@ def wtmmchains(mm, a, keepClosed, scale):
     mm = np.ravel(mm)
     a = np.ravel(a)
     
-    cmm = [] # chained modulus maxima array - TURN INTO PREALLOCATED STRUCTURE OF OBJECTS RATHER THAN LIST
+    cmm = [] # chained modulus maxima array
     
     # Pre-allocate
     searched = np.zeros(mm.shape) # nonzero modulus maxima examined
@@ -423,7 +412,7 @@ def wtmmchains(mm, a, keepClosed, scale):
             y = np.floor(px/lx)+1
             
             # make sure we're not at the edges
-            if x < 2 or y < 2 or x > lx-1 or y > ly-1:
+            if x < 2 or y < 2 or x > lx-2 or y > ly-2:
                 iArr = iArr+1
                 break
                 
