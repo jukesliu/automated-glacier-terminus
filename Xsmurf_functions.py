@@ -127,7 +127,8 @@ def wtmm2d(I,wavelet,scale):
     
 #     if len(locals()) != 3: # if the number of args is < 3
 #         print('Incorrect number of arguments. Syntax is [dx, dy, mm, m, a] = wtmm2d(I, wavelet, scale).')
-     
+    
+    count = 0 # FOR TESTING ONlY
 #     tic()
     I = pad_square(np.array(I))
     
@@ -204,15 +205,11 @@ def wtmm2d(I,wavelet,scale):
         # remove small moduli
         if m[i] < err_norm:
             continue
-        
-#         print(np.mod(i,lx), np.floor(i/lx))
             
         # check if the nearest modulus value works
         if (np.abs(dx_norm[i]) > err_deriv) or (np.abs(dy_norm[i]) > err_deriv):
             xul = np.mod(i,lx) + dx_norm[i] + 0.5
             yul = np.floor(i/lx) + dy_norm[i] + 0.5
-            
-#             print(xul, yul)
                        
             if m[i] <= m[int(np.fix(xul) + np.fix(yul)*lx)]:
                 continue
@@ -224,8 +221,9 @@ def wtmm2d(I,wavelet,scale):
                 continue
 
             # found a modulus maxima
-            mm[i] = m[i]               
-
+            mm[i] = m[i]  
+        
+        
         # since it didn't, use a bilinear interpolation
         x_interp = np.mod(i,lx) + dx_norm[i]
         y_interp = np.floor(i/lx) + dy_norm[i]
@@ -233,6 +231,7 @@ def wtmm2d(I,wavelet,scale):
         # make sure we are inside the image:
         if (x_interp < 0) or (x_interp >= lx-1) or (y_interp < 0) or (y_interp >= ly-1):
             continue
+        
         
         # calculate shifts
         sx = x_interp - np.fix(x_interp) # fix rounds it towards 0
@@ -257,19 +256,18 @@ def wtmm2d(I,wavelet,scale):
         ul = int(np.fix(x_interp) + np.fix(y_interp)*lx)
         m_interp = m[ul]*c00 + m[ul+1]*c10 + m[ul+lx]*c01 + m[ul+lx+1]*c11 # +1 removed from indexing
         
-#         print(ul)
-        
         if m[i] <= m_interp:
             continue
         
         # Second point interpolated (notice sign switch to subtracting. dx_norm)
         x_interp = np.mod(i,lx) - dx_norm[i]
         y_interp = np.floor(i/lx) - dy_norm[i]
+#         print(x_interp); count = count + 1
         
         # make sure we are inside the image:
         if (x_interp < 0) or (x_interp >= lx-1) or (y_interp < 0) or (y_interp >= ly-1):
             continue
-    
+        
         ul = int(np.fix(x_interp) + np.fix(y_interp)*lx)
         m_interp = m[ul]*c11 + m[ul+1]*c01 + m[ul+lx]*c10 + m[ul+lx+1]*c00 # different coefficients
         
@@ -285,7 +283,7 @@ def wtmm2d(I,wavelet,scale):
     dx = dx[:ly,:lx]; dy = dy[:ly,:lx]
     mm = mm[:ly,:lx]; m = m[:ly,:lx]; a = a[:ly,:lx]
 
-#     print(toc())
+    print(toc())
     return dx, dy, mm, m, a
 
 # In[9]:
