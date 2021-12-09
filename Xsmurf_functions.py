@@ -436,7 +436,6 @@ def wtmm2d_v(I,wavelet,scale):
         idxcol4 = np.concatenate((idxcol3[(np.abs(dx_norm3) > err_deriv)],
                                  idxcol3[(np.abs(dy_norm3) > err_deriv)])); idxcol4 = ordered_set(idxcol4)
         
-        # mcol4 7378
         # add these to the chain:
         xul = np.mod(idxcol4,lx) + dx_norm4 + 0.5
         yul = np.floor(idxcol4/lx) + dy_norm4 + 0.5
@@ -763,6 +762,236 @@ def filter_args(args, argbuffer):
         passedargs = []
     
     return passedargs, argfrac
+
+
+def diff_idx(array1, array2):
+    # records the indexes of array1 for elements that are not in array 2
+    import numpy as np
+    
+    idxs = []
+    for i in range(0, len(array1)):
+        val = array1[i]
+        if val not in array2:
+            idxs.append(i)
+    return idxs
+
+
+def wtmm2d_v2(I,wavelet,scale):
+    import numpy as np
+    from ttictoc import tic,toc
+    
+    # Perform 2D Wavelet Transform Modulus Maxima (WTMM) Method on image I
+    # with wavelet at a user-specified scale. This maxima interpolation is vectorized
+    # in this version of the function, which means it runs ~1.5x faster.
+    #
+    # Input:
+    # I       = image (numpy array)
+    # wavelet = name of wavelet to use
+    # scale   = scale of transform
+    #
+    # Output:
+    #   mm = moduli maxima
+    #   m  = moduli
+    #   a  = arguments
+    #
+    # Author: Jukes Liu (translated from MATLAB code by Zach Marin, based on code by Pierre Kestener)
+    #
+    # Modifications made by Andre Khalil following the function
+    # Remove_Gradient_NonMaxima_Slice_2D in Xsmurf 
+    # (Found in {Xsmurf-folder}/edge/extrema_core.c)
+    #
+    # As of now, this function (wtmm2d) seems to work as it should.
+    # However, it only produces correct results for images of size 2^k.
+    # There's a padding step that is probably missing in the FFT functions.
+    #
+    # Last Modified: 2021 10 22
+    
+#     tic()
+    I = pad_square(np.array(I))
+    
+    # calculate spatial frequencies based on scale
+    maxdim = I.shape[0] # either dimension is the maximum whne square
+    delta = 1 
+    K = 1/(maxdim*delta)
+    fX = np.arange(-maxdim/2,maxdim/2,1)*K*scale
+    [fx,fy] = np.meshgrid(fX,fX)
+    
+    # set wavelet based on input
+    if wavelet == 'gauss':
+        p = 1; sigmax = 1; sigmay = 1;
+        psi = np.exp(-((sigmax*(fx))**2 + (sigmay*fy)**2)/2)
+    elif wavelet == 'igauss':
+        p = 1; sigmax = 1; sigmay = 1;
+        psi = 1-np.exp(-((sigmax*(fx))**2 + (sigmay*fy)**2)/2)
+        psi[psi==1] = 0
+    elif wavelet == 'mexh':
+        p = 2; sigmax = 1; sigmay = 1;
+        psi = -(2*np.pi*(fx**2 + fy**2)**(p/2))*np.exp(-((sigmax*(fx))**2 + (sigmay*fy)**2)/2)
+    else:
+        print('ERROR: "'+wavelet+'" is not a valid wavelet. Options are "gauss", "igauss", and "mexh".') 
+    
+    # FFT the image
+    F = ft2(I, delta);
+    
+    f = np.multiply(F,psi) # convolve image with the wavelet
+    
+    # create derivative approximators
+    gx = 1j*2*np.pi*fx
+    gy = 1j*2*np.pi*fy
+        
+    # numerical aproximations of derivatives and in-place inverse FT
+    dy = np.real(ift2(np.multiply(gx,f), delta))
+    dx = np.real(ift2(np.multiply(gy,f), delta))
+    
+    # Calculate modulus and argument from dx and dy (WTMM method)
+    m = np.sqrt(dx**2 + dy**2)
+    a = np.arctan2(dy,dx)
+#     print(toc())
+    
+    ########################################################################################################
+    # FIND MAXIMA USING INTERPOLATION OF M:
+#     tic()
+    # Remove non-maxima to find edges
+    err_norm  = 0.0000005 # Epsilon value to find zeros. If the modulus is less than err_norm, set it to zero.
+    err_deriv = 0.9995 # Epsilon value to determine interpolation type. 
+    # If the derivative's absolute value is greater than err_deriv, use the nearest modulus value. 
+    # Otherwise, perform a bi- or tri-linear interpolation.
+    
+    # compute normalized derivative WT values
+    dx_norm = np.divide(dx,m)
+    dy_norm = np.divide(dy,m)
+    
+    [ly,lx] = m.shape # grab lx and ly (now square)
+    
+    # imitate MATLAB looping order, along columns
+    mshape = m.shape # store shape for reconstruction of original matrix
+    mm = np.zeros(mshape) # initialize mm
+    idxs = np.arange(0, lx*ly) # vector of idxs for m
+    idxs = recon(mshape, idxs)
+    
+    for i in range(0, lx):
+        # select the columns
+        mcol = m[:,i] 
+        idxcol = idxs[:,i]
+        dx_norm_col = dx_norm[:,i]
+        dy_norm_col = dy_norm[:,i]
+    
+        # unravel m
+        mr = np.ravel(m, order='F')
+        
+         # stay away from image edges
+        if (np.floor(idxcol/lx) == 0).all() or (np.floor(idxcol/lx) == ly-1).all():
+    #         print('Vertical edge found at '+str(i))
+            continue # skip vertical edges
+        mcol2 = mcol[1:-1]; idxcol2 = idxcol[1:-1] # remove the horizontal edge
+        dx_norm2 = dx_norm_col[1:-1]; dy_norm2 = dy_norm_col[1:-1]
+         
+        # remove small moduli (keep only m > err_norm)
+        mask2 = np.where(mcol2 >= err_norm)
+        # keep:
+        mcol3 = mcol2[mask2]; idxcol3 = idxcol2[mask2]
+        dx_norm3 = dx_norm2[mask2]; dy_norm3 = dy_norm2[mask2]
+
+        # check if the nearest modulus value works
+        # where dx_norm > err_deriv and dy_norm > err_deriv 
+        mask3 = np.where((np.abs(dx_norm3) > err_deriv) & (np.abs(dy_norm3) > err_deriv))
+        # keep:
+        dx_norm4 = dx_norm3[mask3]; dy_norm4 = dy_norm3[mask3]
+        mcol4 = mcol3[mask3]; idxcol4 = idxcol3[mask3]
+
+        # add these to the chain:
+        xul = np.mod(idxcol4,lx) + dx_norm4 + 0.5
+        yul = np.floor(idxcol4/lx) + dy_norm4 + 0.5
+        
+        mask4 = np.where(mcol4 > mr[(np.fix(xul).astype(int)+np.fix(yul)*lx).astype(int)])
+        mcol5 = mcol4[mask4]; idxcol5 = idxcol4[mask4]
+        dx_norm5 = dx_norm4[mask4]; dy_norm5 = dy_norm4[mask4]
+
+        # note sign difference in operation
+        xul = np.mod(idxcol5,lx) - dx_norm5 + 0.5
+        yul = np.floor(idxcol5/lx) - dy_norm5 + 0.5
+        
+        # last pass
+        mask5 = np.where(mcol5 >= mr[(np.fix(xul).astype(int)+np.fix(yul)*lx).astype(int)])
+        # keep:
+        mcol6 = mcol5[mask5]; idxcol6 = idxcol5[mask5]
+        dx_norm6 = dx_norm5[mask5]; dy_norm6 = dy_norm5[mask5]  
+    
+        if mcol6.size > 0: # any moduli remain, they are modulus maxima: 
+            xs = np.mod(idxcol6,lx)
+            ys = np.floor(idxcol6/lx)
+            mm[xs.astype(int),ys.astype(int)] = mcol6
+    
+        # For all remaining m, proceed with the bilinear inteprolation
+        # Remaining m:
+        diffidx1 = diff_idx(mcol4, mcol6)
+        diffidx2 = diff_idx(mcol3, mcol4[diffidx1])
+        # rename vector variable names to m1, idx1, dynorm1, dxnorm1 for simplicity
+        m1 = mcol3[diffidx2]
+        idx1 = idxcol3[diffidx2]
+        dxnorm1 = dx_norm3[diffidx2]
+        dynorm1 = dy_norm3[diffidx2]
+        
+        x_interp = np.mod(idx1,lx) + dxnorm1
+        y_interp = np.floor(idx1/lx) + dynorm1
+
+        # stay away from edges during interpolation
+        mask6 = np.where((x_interp >= 0) & (x_interp < lx-1) & (y_interp >= 0) & (y_interp < ly-1))
+        # Keep:
+        m2 = m1[mask6]; idx2 = idx1[mask6]
+        dxnorm2 = dxnorm1[mask6]; dynorm2 = dynorm1[mask6]
+        x_interp = x_interp[mask6]; y_interp = y_interp[mask6] # make sure dimensions align
+        
+        [sx, sy, sxsy] = calculate_shifts(x_interp, y_interp) # calculate shifts
+        [c00, c10, c01, c11] = calculate_coeff(sx, sy, sxsy) # calculate bilinear interpolation coefficients
+        
+        # We compare the modulus of the point with the
+        # interpolated modulus. It must be larger to be
+        # still considered as a potential gradient extrema.
+
+        # Here, we consider that it is strictly superior.
+        # The next comparison will be superior or equal.
+        # This way, the extrema is in the light part of the image.
+        # By inverting both tests, we can put it in the
+        # dark side of the image.
+        
+        ul = (np.fix(x_interp) + np.fix(y_interp)*lx).astype(int)
+        m_interp = mr[ul]*c00 + mr[ul+1]*c10 + mr[ul+lx]*c01 + mr[ul+lx+1]*c11 # +1 removed from indexing
+        
+        # Keep only those where m > m_interp:
+        mask7 = np.where(m2 > m_interp)
+        # Keep:
+        m3 = m2[mask7]; idx3 = idx2[mask7]
+        dxnorm3 = dxnorm2[mask7]; dynorm3 = dynorm2[mask7]
+        sx2 = sx[mask7]; sy2 = sy[mask7]; sxsy2 = sxsy[mask7]
+
+        # Second point interpolated (notice sign switch to subtracting dx_norm), superior or equal comparison
+        x_interp2 = np.mod(idx3,lx) - dxnorm3 
+        y_interp2 = np.floor(idx3/lx) - dynorm3        
+
+        # stay away from image edges
+        mask8 = np.where((x_interp2 >= 0) & (x_interp2 < lx-1) & (y_interp2 >= 0) & (y_interp2 < ly-1))
+        # Keep:
+        m4 = m3[mask8]; idx4 = idx3[mask8]
+        dxnorm4 = dxnorm3[mask8]; dynorm4 = dynorm3[mask8]
+        sx3 = sx2[mask8]; sy3 = sy2[mask8];
+        x_interp2 = x_interp2[mask8]; y_interp2 = y_interp2[mask8] # make sure dimensions align
+        
+        sxsy3 = sx3*sy3
+        [c00, c10, c01, c11] = calculate_coeff(sx3, sy3, sxsy3)
+        
+        ul2 = (np.fix(x_interp2) + np.fix(y_interp2)*lx).astype(int)
+        m_interp2 = mr[ul2]*c11 + mr[ul2+1]*c01 + mr[ul2+lx]*c10 + mr[ul2+lx+1]*c00 # different coefficients
+        
+        # Keep only those where m >= m_interp:
+        m5 = m4[m4 >= m_interp2]; idx5 = idx4[m4 >= m_interp2]
+
+        if m5.size > 0: # any moduli remain, they are modulus maxima: 
+            xs = np.mod(idx5,lx); ys = np.floor(idx5/lx)
+            mm[xs.astype(int),ys.astype(int)] = m5
+
+#     print(toc())
+    return dx, dy, mm, m, a
 
 
 
