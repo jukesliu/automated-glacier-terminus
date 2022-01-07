@@ -577,7 +577,7 @@ def flip_search(searched0):
 # In[11]:
 
 
-def wtmmchains(mm, a, keepClosed, scale):
+def wtmmchains(mm, a, keepClosed, scale, counter):
 # Chains the modulus maxima from the 2D WTMM.
 # Searches for 8 neighboring mms.
 # INPUTS:
@@ -592,7 +592,7 @@ def wtmmchains(mm, a, keepClosed, scale):
     
     # define the chain object class with the following parameters:
     class chain:
-        def __init__(self, size, linemeanmod, mass, scaledmass, args, ix, iy):
+        def __init__(self, size, linemeanmod, mass, scaledmass, args, ix, iy, scale):
             self.size = size
             self.linemeanmod = linemeanmod
             self.mass = mass
@@ -600,6 +600,7 @@ def wtmmchains(mm, a, keepClosed, scale):
             self.args = args
             self.ix = ix
             self.iy = iy
+            self.scale = scale
 
         def show(self):
             print('Size:', self.size)
@@ -609,6 +610,7 @@ def wtmmchains(mm, a, keepClosed, scale):
             print('Arguments:', self.args)
             print('ix:', self.ix)
             print('iy:', self.iy)
+            print('scale number:', scale)
             
     [ly,lx] = mm.shape # grab original shape of mm
     mm = np.ravel(mm)
@@ -713,7 +715,7 @@ def wtmmchains(mm, a, keepClosed, scale):
         scaledmass = mass/(2**scale) # divided by binary scale
         
         # create chain object
-        newchain = chain(size, linemeanmod, mass, scaledmass, argArr[:idx], xArr[:idx], yArr[:idx]) 
+        newchain = chain(size, linemeanmod, mass, scaledmass, argArr[:idx], xArr[:idx], yArr[:idx],counter) 
         cmm.append(newchain) # store it
         
 #     print('Chaining done.')
@@ -994,5 +996,127 @@ def wtmm2d_v2(I,wavelet,scale):
     return dx, dy, mm, m, a
 
 
+def wtmm2d_img(image):
+    if True == True:
+        topchains_dfs = []
+        
+        img = Image.open(processed_image_path+image)
+#         print(str(image_num)+' out of '+str(len(imagelist))+' '+image)
+        print(image)
+        
+        # WTMM
+        counter = 0
+        all_cmm = [] # to hold all the chains produced
+        # ascend over all scales
+        for iOct in np.arange(0, nOct):
+            for iVox in np.arange(0, nVox):
+
+                # calculate scale in pixels
+                scale = 6/0.86*amin*2**(iOct+(iVox/nVox))
+#                 print('Scale: '+str(scale))
+
+                # wavelet transform
+                [dx, dy, mm, m, a] = wtmm2d_v2(img, wavelet, scale)
+                
+                # emask
+                masked_a = emask(box_array, a)
+                masked_mm = emask(box_array, mm)
+                masked_m = emask(box_array, m)
+
+                # chain
+                cmm = wtmmchains(masked_mm,masked_a,0,scale,counter)
+
+                # increment
+                all_cmm.extend(cmm)
+                counter = counter +1 
+       
+    
+        # Make directory to store chain jsons:
+        imgfolder = processed_image_path+image+'_chains/'
+        if not os.path.exists(imgfolder):
+            os.mkdir(imgfolder)
+
+        # Pick the terminus line
+        # Find maximum mods and sizes for thresholding
+        mods = []; sizes = []
+        for chain in all_cmm:
+            sizes.append(chain.size)
+            mods.append(chain.linemeanmod)
+        maxmod = np.nanmax(mods); maxsize = np.nanmax(sizes)
+            
+        mass_or_size = []
+        passed_chains = []
+        passcount = 0
+        for chain in all_cmm:
+            if chain.linemeanmod > mod_thresh*maxmod: # only chains that pass the mod threshold
+#                 if chain.size > size_thresh*maxsize: # only chains that pass the size threshold
+                if chain.size > size_thresh*np.sqrt(len(box_array[box_array > 0])):
+                    [passedargs, argfrac] = filter_args(chain.args, np.pi/3) # identify the left & right-pointing args
+                    if argfrac > arg_thresh: # only chains that pass the orientation threshold
+                        if metric == 0:
+                            mass_or_size.append(chain.mass)
+                        elif metric == 1:
+                            mass_or_size.append(chain.scaledmass)
+                        else:
+                            mass_or_size.append(chain.size)
+                        passcount += 1
+                        passed_chains.append(chain)
+        
+        if passcount > 0: # if chains remain:
+            # sort by mass or size and grab the top 5
+            zipped = zip(mass_or_size, passed_chains)              
+            top_chains = sorted(zipped,reverse=True,
+                                key=lambda zipped: zipped[0])[:5] # sort chains that passed
+
+            # grab info from top 5 chains
+            scales = []; boxids = []; orders = []; scenes = []; dates = []
+            # write the top 5 to json
+            for chain in top_chains:
+                # grab the chain
+                chain = chain[1]
+
+                # convert dtypes to json serializable dtypes:
+                chain.size = int(chain.size)
+                chain.linemeanmod = float(chain.linemeanmod)
+                chain.mass = float(chain.mass)
+                chain.scaledmass = float(chain.scaledmass)
+                chain.args = list(map(float, chain.args))
+                chain.ix = list(map(int, chain.ix))
+                chain.iy = list(map(int, chain.iy))
+                chain.scale = str(chain.scale)
+                scales.append(chain.scale.zfill(3))
+
+                # write object to json file
+                with open(imgfolder+chain.scale.zfill(3)+'_chain.json', 'w') as f:
+                    json.dump(chain.__dict__, f)
+
+            topchains_df = pd.DataFrame(top_chains,columns=['Metric','chain'])
+            rows = len(topchains_df)
+
+            for n in range(0,rows):
+                boxids.append(BoxID.zfill(3)) # box string
+                order = n+1 # order of chains (already sorted)
+                orders.append(order)
+                scenes.append(image[2:-20])
+                date = datetime.datetime.strptime(image[19:27], '%Y%m%d')
+                date = date.strftime("%Y-%m-%d"); dates.append(date)
+            topchains_df['BoxID'] = boxids; topchains_df['Scene'] = scenes
+            topchains_df['datetimes'] = dates;
+            topchains_df['Scale'] = scales; topchains_df['Order'] = orders
+            topchains_df = topchains_df[['BoxID','Scene','datetimes','Scale','Metric','Order']]
+            topchains_dfs.append(topchains_df)
+
+            # visualize top chains:
+            colors = pl.cm.viridis(np.linspace(0,1,5)) # generate colors using a colormap
+            plt.figure(figsize=(8,8))
+            plt.imshow(np.array(img), aspect='equal', cmap = 'gray')
+            plt.gca().set_aspect('equal'); plt.gca().invert_yaxis()
+            for k in range(0, len(top_chains)): # plot chains (purple = top, yellow = 5th)
+                plt.plot(top_chains[len(top_chains)-1-k][1].ix, 
+                         top_chains[len(top_chains)-1-k][1].iy, 's-', color=colors[k],markersize=0.1)
+            plt.show()
+            return topchains_dfs
+        else:
+            print('No chains passed.')
 
 
