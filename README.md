@@ -1,7 +1,5 @@
 # automated-glacier-terminus
 
-Managed by Jukes Liu (jukesliu@u.boisestate.edu).
-
 This repository contains code to automatically delineate glacier terminus positions in Landsat 8 imagery using the adapted 2D Wavelet Transform Modulus Maxima (WTMM) segmentation method [(Liu et al., 2021)](https://ieeexplore.ieee.org/document/9349100 "doi: 10.1109/TGRS.2021.3053235"). There are two workflows, one exclusively run in Python and the other which requires the Xsmurf software. Please contact jukesliu@u.boisestate.edu and andre.khalil@maine.edu if you would like to install Xsmurf.
 
 __Set up a local conda environment__ <br />
