@@ -7,18 +7,9 @@ dependencies:
   - numpy
   - pandas
   - scipy
-  - math
-  - subprocess
-  - os
-  - shutil
-  - datetime
-  - cv2
-  - PIL
+  - opencv
   - matplotlib-base
   - pyfftw
-  - ttictoc
-  - json
-  - multiprocessing
   - fiona
   - geopandas
   - shapely
