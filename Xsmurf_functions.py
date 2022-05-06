@@ -118,12 +118,6 @@ def wtmm2d(I,wavelet,scale):
     # Modifications made by Andre Khalil following the function
     # Remove_Gradient_NonMaxima_Slice_2D in Xsmurf 
     # (Found in {Xsmurf-folder}/edge/extrema_core.c)
-    #
-    # As of now, this function (wtmm2d) seems to work as it should.
-    # However, it only produces correct results for images of size 2^k.
-    # There's a padding step that is probably missing in the FFT functions.
-    #
-    # Last Modified: 2021 10 03
     
     count = 0 # FOR TESTING ONlY
 #     tic()
@@ -334,12 +328,6 @@ def wtmm2d_v(I,wavelet,scale):
     # Modifications made by Andre Khalil following the function
     # Remove_Gradient_NonMaxima_Slice_2D in Xsmurf 
     # (Found in {Xsmurf-folder}/edge/extrema_core.c)
-    #
-    # As of now, this function (wtmm2d) seems to work as it should.
-    # However, it only produces correct results for images of size 2^k.
-    # There's a padding step that is probably missing in the FFT functions.
-    #
-    # Last Modified: 2021 10 22
     
 #     tic()
     I = pad_square(np.array(I))
@@ -584,7 +572,8 @@ def wtmmchains(mm, a, keepClosed, scale, counter):
 #    - mm: the modulus maxima matrix from wtmm2d
 #    - a: the argument matrix from wtmm2d
 #    - keepClosed: 1 to keep the closed loops, 0 to remove them
-#    - scale: scale of analysis (float)
+#    - scale: scale of analysis [pixels] 
+#    - counter: integer scale (e.g. from 0 to 49) [unitless]
 # OUTPUTS:
 #    - cmm: a list of chain objects corresponding to the chained modulus maxima
 
@@ -994,4 +983,3 @@ def wtmm2d_v2(I,wavelet,scale):
 
 #     print(toc())
     return dx, dy, mm, m, a
-
