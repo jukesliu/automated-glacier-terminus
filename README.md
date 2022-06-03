@@ -1,8 +1,8 @@
 # automated-glacier-terminus
 
-This repository contains python code to automatically delineate glacier terminus positions in Landsat 7 and Landsat 8 imagery using the adapted 2D Wavelet Transform Modulus Maxima (WTMM) segmentation method [(Liu et al., 2021)](https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=9349100). The 2D WTMM method calculates gradients in brightness throughout each image at 50 unique spatial scales and produces maxima chains correpsonding to the maximum brightness gradients. These maxima chains delineate regions of high contrast in brightness, such as the glacier terminus margin. Relative terminus positions are calculated along three flowlines across the terminus width, as such:
+This code automatically delineate marine glacier terminus positions in Landsat 7 and Landsat 8 imagery using the adapted 2D Wavelet Transform Modulus Maxima (WTMM) segmentation method [(Liu et al., 2021)](https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=9349100). The 2D WTMM method calculates gradients in brightness throughout each image at 50 unique spatial scales and produces maxima chains correpsonding to the maximum brightness gradients. These maxima chains delineate regions of high contrast in brightness, such as the glacier terminus margin. The terminus line is selected through an optimized thresholding approach. Relative terminus positions are calculated along three glacier flowlines, as such:
 
-    
+<img src="flowlines_horizontal.png" alt="fig" width="800"/>
 
 For more details, please see:
 
@@ -11,9 +11,6 @@ For more details, please see:
 We politely request that you provide attribution to this work if you intend to use the code for published research by citing the paper above. The repo itself is citable as:
 
     Citation 
-
-There are two workflows, one exclusively run in Python and the other which requires the Xsmurf software. Please contact jukesliu@u.boisestate.edu and andre.khalil@maine.edu if you would like to install Xsmurf.
-
 
 ## Set up your working directory structure as follows: <br />
 * glacier_files/
@@ -25,7 +22,7 @@ There are two workflows, one exclusively run in Python and the other which requi
     + Box002/
     + BoxNNN/
              
-Begin by obtaining or generating rectangular boxes over each glacier's terminus area as ESRI shapefiles. Name them _BoxNAMEID.shp_. These will be stored in your **glacier_files/** folder (basepath variable). When the BoxID subfolders are generated automatically in the first two scripts, move the shapefiles into their respective folders. OPTIONAL: Repeat for each glacier's Randolph Glacier Inventory outline if available. Name them _RGI_BoxNAMEID.shp_. <br />
+Begin by obtaining or generating rectangular boxes over each glacier's terminus area as ESRI shapefiles. Name them _BoxNAMEID.shp_. These will be stored in your **glacier_files** folder (basepath variable). When the BoxID subfolders are generated automatically in the first two scripts, move the shapefiles into their respective folders. OPTIONAL: Repeat for each glacier's Randolph Glacier Inventory outline if available. Name them _RGI_BoxNAMEID.shp_. <br />
 
 The **LSaws** folder (downloadpath variable) will contain the Landsat images automatically downloaded in the first script. <br />
 
@@ -33,10 +30,12 @@ The **LSaws** folder (downloadpath variable) will contain the Landsat images aut
 ## Run the scripts in this order: <br />
 1) LS_image_download_AWS.ipynb*  <br />
 2) preprocess.ipynb  <br />
-3) wtmm2d_terminuspick.ipynb (python only) OR wtmm2d_terminuspick_Xsmurf.ipynb (requires Xsmurf)  <br />
+3) wtmm2d_terminuspick.ipynb (python only) OR wtmm2d_terminuspick_Xsmurf.ipynb (requires Xsmurf**)  <br />
 4) analyze_wtmm_results.ipynb  <br />
 
 _*The first script in this workflow automatically downloads subsets of Landsat 7 and 8 imagery available at low cost through the Amazon Web Services (AWS) s3 bucket. This requires a requester pays account through AWS. If you would like to input your own set of Landsat 7 and 8 images, skip the first script and start with preprocess.ipynb._  <br />
+
+_**Please contact jukesliu@u.boisestate.edu and andre.khalil@maine.edu if you would like to install Xsmurf._  <br />
 
 Each .ipynb file contains text describing the analysis in that step.  <br />
 
