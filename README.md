@@ -1,6 +1,6 @@
 # automated-glacier-terminus
 
-This code automatically delineate marine glacier terminus positions in Landsat 7 and Landsat 8 imagery using the adapted 2D Wavelet Transform Modulus Maxima (WTMM) segmentation method [(Liu et al., 2021)](https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=9349100). The 2D WTMM method calculates gradients in brightness throughout each image at 50 unique spatial scales and produces maxima chains correpsonding to the maximum brightness gradients. These maxima chains delineate regions of high contrast in brightness, such as the glacier terminus margin. The terminus line is selected through an optimized thresholding approach. Relative terminus positions are calculated along three glacier flowlines, as such:
+This code automatically delineates marine glacier terminus positions in Landsat 7 and Landsat 8 imagery using the adapted 2D Wavelet Transform Modulus Maxima (WTMM) segmentation method [(Liu et al., 2021)](https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=9349100). The 2D WTMM method calculates gradients in brightness throughout each image at 50 unique spatial scales and produces maxima chains correpsonding to the maximum brightness gradients. These maxima chains delineate regions of high contrast in brightness, such as the glacier terminus margin. The terminus line is selected through an optimized thresholding approach. Relative terminus positions are calculated along three glacier flowlines, as such:
 
 <img src="flowlines_horizontal.png" alt="fig" width="800"/>
 
