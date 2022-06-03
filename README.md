@@ -8,9 +8,7 @@ For more details, please see:
 
     Liu,J., Enderlin, E. M., Marshall, H.P., and A. Khalil (2021). Automated Detection of Marine Glacier Calving Fronts Using the 2-D Wavelet Transform Modulus Maxima Segmentation Method. IEEE Transactions on Geoscience and Remote Sensing, vol. 59, no. 11, pp. 9047-9056. doi: 10.1109/TGRS.2021.3053235
 
-We politely request that you provide attribution to this work if you intend to use the code for published research by citing the paper above. The repo itself is citable as:
-
-    Citation 
+We politely request that you provide attribution to this work if you intend to use the code for published research by citing the paper above.
 
 ## Set up your working directory structure as follows: <br />
 * glacier_files/
