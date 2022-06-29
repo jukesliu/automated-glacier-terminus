@@ -286,7 +286,7 @@ def calc_theta(manual_df):
 # In[4]:
 
 
-def results_allglaciers(date_csv, centerline_csv, vel_csv, analysis_date, V, N1, N2):
+def results_allglaciers(date_csv, centerline_csv, vel_csv, analysis_date, rotated_foldername, V, N1, N2):
     #import packages and functions
     import numpy as np
     import os
@@ -320,7 +320,7 @@ def results_allglaciers(date_csv, centerline_csv, vel_csv, analysis_date, V, N1,
     BoxIDs = list(pd.read_csv(csvpaths+centerline_csv, sep=',', dtype=str)['BoxID']) # List of BoxIDs
     for BOI in BoxIDs:
         print("Box"+BOI)
-        metric = "Datfiles_c1/"; imagepath = basepath+"Box"+BOI+"/rotated_c1/"
+        metric = "Datfiles_c1/"; imagepath = basepath+"Box"+BOI+"/"+rotated_foldername
         
         order_box_df = pd.read_csv(csvpaths+'terminuspicks_Box'+BOI+'_'+analysis_date+'.csv', 
                                    sep=',', dtype=str, usecols=[1,2,3,4,0], header = 1)
@@ -545,7 +545,7 @@ def results_allglaciers(date_csv, centerline_csv, vel_csv, analysis_date, V, N1,
 
 # In[ ]:
 
-def resize_pngs(path):
+def resize_pngs(path, iarray):
     import numpy as np
     import os
     from PIL import Image
@@ -573,27 +573,30 @@ def resize_pngs(path):
                 img = mpimg.imread(path+image)
                 if img.shape[1] > min_x or img.shape[0] > min_y:
                     #calculate difference, and divide by 2 to get amount of rows to remove by
-                    diffx_half = (img.shape[1] - min_x )/2; diffy_half = (img.shape[0] - min_y)/2
+                    diffx_half = (img.shape[1] - min_x)/2; diffy_half = (img.shape[0] - min_y)/2
 
                     #if the difference is a half pixel, make sure to remove the full value from the first side only
                     if int(diffx_half) != diffx_half:
                         #remember for image slicing y is the first dimension, x is the second
                         img_cropx = img[:, int(diffx_half):-int(diffx_half)-1]
+                        iarray_cropx = iarray[:,int(diffx_half):-int(diffx_half)-1,:] 
                     else: #otherwise remove it from both sides:
                         img_cropx = img[:, int(diffx_half):-int(diffx_half)]
+                        iarray_cropx = iarray[:, int(diffx_half):-int(diffx_half),:]
 
                     #same for y
                     if int(diffy_half) != diffy_half:   
                         img_cropy = img_cropx[int(diffy_half):-int(diffy_half)-1, :]
+                        iarray_cropy = iarray_cropx[int(diffy_half):-int(diffy_half)-1,:,:]
                     else:
                         img_cropy = img_cropx[int(diffy_half):-int(diffy_half), :]
-
+                        iarray_cropy = iarray_cropx[int(diffy_half):-int(diffy_half),:,:]
+                    
+                    print(img_cropy.shape, iarray_cropy.shape)
                     #save over original images
-#                     resized = Image.fromarray(img_cropy)
-#                     resized.save(downloadpath+"Box"+BoxID+'/rotated_c1/'+image)
-#                     img_cropy.imsave(downloadpath+"Box"+BoxID+'/rotated_c1/'+image)
                     resized = np.ascontiguousarray(img_cropy)
                     plt.imsave(path+image[:-4]+'.png', resized, cmap='gray')
+                    return iarray_cropy
 
 
 # In[ ]:
