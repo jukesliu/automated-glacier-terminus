@@ -46,8 +46,14 @@ Other packages required are listed in the environment.yml file included. **Set u
 
 activate newly created environment:
 
-- conda activate autoterm_env
+- conda activate autoterm
 
-then start jupyter in browser
+and add as a ipykernel:
 
-- jupyter notebook &
+- python3 -m ipykernel install --user --name=autoterm
+
+then start jupyter in browser:
+
+- jupyter notebook
+
+and change the kernel to **autoterm**.
