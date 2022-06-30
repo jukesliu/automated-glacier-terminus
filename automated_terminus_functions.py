@@ -592,7 +592,8 @@ def resize_pngs(path, iarray):
                         img_cropy = img_cropx[int(diffy_half):-int(diffy_half), :]
                         iarray_cropy = iarray_cropx[int(diffy_half):-int(diffy_half),:,:]
                     
-                    print(img_cropy.shape, iarray_cropy.shape)
+                    print(min_y, min_x, iarray_cropy.shape)
+                    
                     #save over original images
                     resized = np.ascontiguousarray(img_cropy)
                     plt.imsave(path+image[:-4]+'.png', resized, cmap='gray')
