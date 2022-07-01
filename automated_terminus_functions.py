@@ -556,7 +556,6 @@ def resize_pngs(path, iarray):
     images = os.listdir(path)
     for image in images:
         if image.endswith('.png'):
-#             print(image)
             img = mpimg.imread(path+image)
             dimensions_x.append(img.shape[1]); dimensions_y.append(img.shape[0])
 
@@ -567,11 +566,12 @@ def resize_pngs(path, iarray):
     if index_x != index_y:
         print('Something is funky with the image dimesions for this Box')
     else:
-        #crop each image if the dimensions are larger than the minimum
         for image in images:
+#         # crop each image if the dimensions are larger than the minimum)
             if image.endswith('.png'):
                 img = mpimg.imread(path+image)
                 if img.shape[1] > min_x or img.shape[0] > min_y:
+                    print(image, 'cropped')
                     #calculate difference, and divide by 2 to get amount of rows to remove by
                     diffx_half = (img.shape[1] - min_x)/2; diffy_half = (img.shape[0] - min_y)/2
 
@@ -592,11 +592,11 @@ def resize_pngs(path, iarray):
                         img_cropy = img_cropx[int(diffy_half):-int(diffy_half), :]
                         iarray_cropy = iarray_cropx[int(diffy_half):-int(diffy_half),:,:]
                     
-                    print(min_y, min_x, iarray_cropy.shape)
-                    
                     #save over original images
                     resized = np.ascontiguousarray(img_cropy)
                     plt.imsave(path+image[:-4]+'.png', resized, cmap='gray')
+
+                    print(min_y, min_x, iarray_cropy.shape)
                     return iarray_cropy
 
 
