@@ -566,6 +566,30 @@ def resize_pngs(path, iarray):
     if index_x != index_y:
         print('Something is funky with the image dimesions for this Box')
     else:
+        # crop the iarray:
+        if iarray.shape[1] > min_x or iarray.shape[0] > min_y:
+            diffx_half = (iarray.shape[1] - min_x)/2; diffy_half = (iarray.shape[0] - min_y)/2
+
+            # if the difference is a half pixel, make sure to remove the full value from the first side only
+            if int(diffx_half) != diffx_half:
+                #remember for image slicing y is the first dimension, x is the second
+                iarray_cropx = iarray[:,int(diffx_half):-int(diffx_half)-1,:] 
+            else: #otherwise remove it from both sides:
+                iarray_cropx = iarray[:, int(diffx_half):-int(diffx_half),:]
+
+            #same for y
+            if int(diffy_half) != diffy_half:   
+                iarray_cropy = iarray_cropx[int(diffy_half):-int(diffy_half)-1,:,:]
+            else:
+                iarray_cropy = iarray_cropx[int(diffy_half):-int(diffy_half),:,:]
+
+            print(min_y, min_x, iarray_cropy.shape)
+            return iarray_cropy
+        else:
+            print(min_y, min_x, iarray.shape)
+            return iarray
+        
+        # crop the images
         for image in images:
 #         # crop each image if the dimensions are larger than the minimum)
             if image.endswith('.png'):
@@ -579,26 +603,18 @@ def resize_pngs(path, iarray):
                     if int(diffx_half) != diffx_half:
                         #remember for image slicing y is the first dimension, x is the second
                         img_cropx = img[:, int(diffx_half):-int(diffx_half)-1]
-                        iarray_cropx = iarray[:,int(diffx_half):-int(diffx_half)-1,:] 
                     else: #otherwise remove it from both sides:
                         img_cropx = img[:, int(diffx_half):-int(diffx_half)]
-                        iarray_cropx = iarray[:, int(diffx_half):-int(diffx_half),:]
 
                     #same for y
                     if int(diffy_half) != diffy_half:   
                         img_cropy = img_cropx[int(diffy_half):-int(diffy_half)-1, :]
-                        iarray_cropy = iarray_cropx[int(diffy_half):-int(diffy_half)-1,:,:]
                     else:
                         img_cropy = img_cropx[int(diffy_half):-int(diffy_half), :]
-                        iarray_cropy = iarray_cropx[int(diffy_half):-int(diffy_half),:,:]
                     
                     #save over original images
                     resized = np.ascontiguousarray(img_cropy)
                     plt.imsave(path+image[:-4]+'.png', resized, cmap='gray')
-
-                    print(min_y, min_x, iarray_cropy.shape)
-                    return iarray_cropy
-
 
 # In[ ]:
 def terminuspick_1glacier(BoxID, inputs, CPU):
