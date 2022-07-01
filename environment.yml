@@ -19,6 +19,8 @@ dependencies:
   - jupyterlab~=3.4
   - conda-lock~=1.0
   - pip
+  - geojson
+  - pyproj
   - pip:
     - ttictoc
 platforms:
