@@ -17,6 +17,7 @@ dependencies:
   - scipy~=1.8
   - Shapely~=1.8
   - jupyterlab~=3.4
+  - notebook~=6.1.4
   - conda-lock~=1.0
   - pip
   - geojson
