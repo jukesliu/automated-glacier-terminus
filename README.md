@@ -5,9 +5,9 @@ This code automatically delineates marine glacier terminus positions in Landsat 
 <img src="flowlines_horizontal.png" alt="fig" width="800"/>
 
 For more details, please see:
-
+```
     Liu,J., Enderlin, E. M., Marshall, H.P., and A. Khalil (2021). Automated Detection of Marine Glacier Calving Fronts Using the 2-D Wavelet Transform Modulus Maxima Segmentation Method. IEEE Transactions on Geoscience and Remote Sensing, vol. 59, no. 11, pp. 9047-9056. doi: 10.1109/TGRS.2021.3053235
-
+```
 We politely request that you provide attribution to this work if you intend to use the code for published research by citing the paper above.
 
 ## Set up your working directory structure as follows: <br />
@@ -38,22 +38,41 @@ _**Please contact jukesliu@u.boisestate.edu and andre.khalil@maine.edu if you wo
 Each .ipynb file contains text describing the analysis in that step.  <br />
 
 ## System requirements: <br />
-Requires GDAL version 3.2 or newer with command terminal functionality (e.g., gdalwarp, gdal_translate). Several steps require the [ImageMagick command line software](https://imagemagick.org/script/download.php) to be installed. If downloading images through AWS, the AWS command line interface must also be installed.
+Requires GDAL version 3.2 or newer with command terminal functionality (e.g., gdalwarp, gdal_translate). Several steps require the [ImageMagick command line software](https://imagemagick.org/script/download.php) to be installed. If downloading images through AWS, the AWS command line interface must also be installed. Other packages required are listed in the autoterm.yml file included. **Set up a local micromamba environment** with the .yml file. From the repository root, run in a terminal:
 
-Other packages required are listed in the environment.yml file included. **Set up a local conda environment** with the .yml file. From the repository root, run in a terminal:
+### Installing the autoterm environment with micromamba
 
-- conda env create -f environment.yml
+(0)	Install micromamba
+```
+"${SHELL}" <(curl -L micro.mamba.pm/install.sh)
+```
 
-activate newly created environment:
+#### Option A: from autoterm.yml
 
-- conda activate autoterm
+```
+micromamba env create --file autoterm.yaml
+```
 
-and add as a ipykernel:
+#### Option B: manual installation
 
-- python3 -m ipykernel install --user --name=autoterm
+(1) Create a new environment named "autoterm" with python 3.9.15
+```
+micromamba create -n autoterm python=3.9.15
+```
 
-then start jupyter in browser:
+(2) Activate the environment. Then, download the following packages into the environment in the following order:
+```
+micromamba activate autoterm
 
-- jupyter notebook
+micromamba install notebook numpy pandas matplotlib pyfftw geojson -c conda-forge
 
-and change the kernel to **autoterm**.
+micromamba install boto3=1.24.60 scipy=1.9.0 pyproj=3.3.1 opencv=4.5.5 -c conda-forge
+
+micromamba install rasterio=1.2.10 fiona=1.8.21 geopandas=0.11.0 -c conda-forge!
+```
+
+#### make sure autoterm is active prior to opening Jupyter notebook and running the scripts:
+```
+micromamba activate autoterm
+```
+
