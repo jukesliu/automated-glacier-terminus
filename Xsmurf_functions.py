@@ -98,7 +98,6 @@ def pad_square(nparray):
 
 def wtmm2d(I,wavelet,scale):
     import numpy as np
-    from ttictoc import tic,toc
     
     # Perform 2D Wavelet Transform Modulus Maxima (WTMM) Method on image I
     # with wavelet at a user-specified scale.
@@ -120,7 +119,6 @@ def wtmm2d(I,wavelet,scale):
     # (Found in {Xsmurf-folder}/edge/extrema_core.c)
     
     count = 0 # FOR TESTING ONlY
-#     tic()
     I = pad_square(np.array(I))
     
 #     print(I.shape)
@@ -307,7 +305,6 @@ def ordered_set(nparray):
 
 def wtmm2d_v(I,wavelet,scale):
     import numpy as np
-    from ttictoc import tic,toc
     
     # Perform 2D Wavelet Transform Modulus Maxima (WTMM) Method on image I
     # with wavelet at a user-specified scale. This maxima interpolation is vectorized
@@ -423,6 +420,9 @@ def wtmm2d_v(I,wavelet,scale):
                                mcol3[(np.abs(dy_norm3) > err_deriv)])); mcol4 = ordered_set(mcol4)
         idxcol4 = np.concatenate((idxcol3[(np.abs(dx_norm3) > err_deriv)],
                                  idxcol3[(np.abs(dy_norm3) > err_deriv)])); idxcol4 = ordered_set(idxcol4)
+        
+        print(len(idxcol4)); print(len(dx_norm4)); print(len(dy_norm4)) # WHY ARE THEY  DIFF LENGTHA
+        print(len(dx_norm3)); print(len(dy_norm3))
         
         # add these to the chain:
         xul = np.mod(idxcol4,lx) + dx_norm4 + 0.5
@@ -769,7 +769,6 @@ def diff_idx(array1, array2):
 
 def wtmm2d_v2(I,wavelet,scale):
     import numpy as np
-    from ttictoc import tic,toc
     
     # Perform 2D Wavelet Transform Modulus Maxima (WTMM) Method on image I
     # with wavelet at a user-specified scale. This maxima interpolation is vectorized

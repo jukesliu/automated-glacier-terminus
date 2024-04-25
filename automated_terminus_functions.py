@@ -545,7 +545,7 @@ def results_allglaciers(date_csv, centerline_csv, vel_csv, analysis_date, rotate
 
 # In[ ]:
 
-def resize_pngs(path, iarray):
+def resize_imgs(path, iarray):
     import numpy as np
     import os
     from PIL import Image
@@ -555,7 +555,7 @@ def resize_pngs(path, iarray):
     dimensions_x = []; dimensions_y = []
     images = os.listdir(path)
     for image in images:
-        if image.endswith('.png'):
+        if image.endswith('.TIF'):
             img = mpimg.imread(path+image)
             dimensions_x.append(img.shape[1]); dimensions_y.append(img.shape[0])
 
@@ -563,9 +563,21 @@ def resize_pngs(path, iarray):
     min_y = np.min(dimensions_y); min_x = np.min(dimensions_x)
     index_y = dimensions_y.index(min_y); index_x = dimensions_x.index(min_x)
     
-    if index_x != index_y:
-        print('Something is funky with the image dimesions for this Box')
-    else:
+    if (index_x != index_y): # if the minimum dimensions don't match:
+        if (index_x != 0) or (index_y != 0): # minimum is found:
+             # select the dimension that does have a correct minimum
+            if index_x != 0:
+                index_y = index_x
+            elif index_y != 0:
+                index_x = index_y
+        else:
+            print('Something is funky with the image dimensions:')
+            print('X:',list(dimensions_x))
+            print('Y:', list(dimensions_y))
+            print(index_x)
+            print(index_y)
+
+    if (index_x == index_y): # now if they match
         # crop the iarray:
         if iarray.shape[1] > min_x or iarray.shape[0] > min_y:
             diffx_half = (iarray.shape[1] - min_x)/2; diffy_half = (iarray.shape[0] - min_y)/2
@@ -592,7 +604,7 @@ def resize_pngs(path, iarray):
         # crop the images
         for image in images:
 #         # crop each image if the dimensions are larger than the minimum)
-            if image.endswith('.png'):
+            if image.endswith('.TIF'):
                 img = mpimg.imread(path+image)
                 if img.shape[1] > min_x or img.shape[0] > min_y:
                     print(image, 'cropped')
@@ -614,7 +626,7 @@ def resize_pngs(path, iarray):
                     
                     #save over original images
                     resized = np.ascontiguousarray(img_cropy)
-                    plt.imsave(path+image[:-4]+'.png', resized, cmap='gray')
+                    plt.imsave(path+image[:-4]+'.TIF', resized, cmap='gray')
 
 # In[ ]:
 def terminuspick_1glacier(BoxID, inputs, CPU):
