@@ -551,82 +551,74 @@ def resize_imgs(path, iarray):
     from PIL import Image
     import matplotlib.image as mpimg
     import matplotlib.pyplot as plt
-    
+
+    print('Resizing images.')
     dimensions_x = []; dimensions_y = []
     images = os.listdir(path)
     for image in images:
-        if image.endswith('.TIF'):
+        if image.endswith('.TIF') or image.endswith('raster_cut.pgm'):
             img = mpimg.imread(path+image)
             dimensions_x.append(img.shape[1]); dimensions_y.append(img.shape[0])
 
-    #find minimum dimensions
+    #find minimum image dimensions
     min_y = np.min(dimensions_y); min_x = np.min(dimensions_x)
-    index_y = dimensions_y.index(min_y); index_x = dimensions_x.index(min_x)
-    
-    if (index_x != index_y): # if the minimum dimensions don't match:
-        if (index_x != 0) or (index_y != 0): # minimum is found:
-             # select the dimension that does have a correct minimum
-            if index_x != 0:
-                index_y = index_x
-            elif index_y != 0:
-                index_x = index_y
-        else:
-            print('Something is funky with the image dimensions:')
-            print('X:',list(dimensions_x))
-            print('Y:', list(dimensions_y))
-            print(index_x)
-            print(index_y)
 
-    if (index_x == index_y): # now if they match
-        # crop the iarray:
-        if iarray.shape[1] > min_x or iarray.shape[0] > min_y:
-            diffx_half = (iarray.shape[1] - min_x)/2; diffy_half = (iarray.shape[0] - min_y)/2
-
-            # if the difference is a half pixel, make sure to remove the full value from the first side only
-            if int(diffx_half) != diffx_half:
-                #remember for image slicing y is the first dimension, x is the second
-                iarray_cropx = iarray[:,int(diffx_half):-int(diffx_half)-1,:] 
-            else: #otherwise remove it from both sides:
-                iarray_cropx = iarray[:, int(diffx_half):-int(diffx_half),:]
-
-            #same for y
-            if int(diffy_half) != diffy_half:   
-                iarray_cropy = iarray_cropx[int(diffy_half):-int(diffy_half)-1,:,:]
-            else:
-                iarray_cropy = iarray_cropx[int(diffy_half):-int(diffy_half),:,:]
-
-            print(min_y, min_x, iarray_cropy.shape)
-            return iarray_cropy
-        else:
-            print(min_y, min_x, iarray.shape)
-            return iarray
-        
-        # crop the images
-        for image in images:
+    # crop the images
+    for image in images:
 #         # crop each image if the dimensions are larger than the minimum)
-            if image.endswith('.TIF'):
-                img = mpimg.imread(path+image)
-                if img.shape[1] > min_x or img.shape[0] > min_y:
-                    print(image, 'cropped')
-                    #calculate difference, and divide by 2 to get amount of rows to remove by
-                    diffx_half = (img.shape[1] - min_x)/2; diffy_half = (img.shape[0] - min_y)/2
+        if image.endswith('.TIF') or image.endswith('raster_cut.pgm'):
+            img = mpimg.imread(path+image)
+            if img.shape[1] > min_x or img.shape[0] > min_y:
+                print(image, 'cropped')
+                #calculate difference, and divide by 2 to get amount of rows to remove by
+                diffx_half = (img.shape[1] - min_x)/2; diffy_half = (img.shape[0] - min_y)/2
 
-                    #if the difference is a half pixel, make sure to remove the full value from the first side only
-                    if int(diffx_half) != diffx_half:
-                        #remember for image slicing y is the first dimension, x is the second
-                        img_cropx = img[:, int(diffx_half):-int(diffx_half)-1]
-                    else: #otherwise remove it from both sides:
-                        img_cropx = img[:, int(diffx_half):-int(diffx_half)]
+                #if the difference is a half pixel, make sure to remove the full value from the first side only
+                if diffx_half == 0: # if the difference is 0
+                    img_cropx = img # no need to crop the x dimension
+                elif int(diffx_half) != diffx_half:
+                    #remember for image slicing y is the first dimension, x is the second
+                    img_cropx = img[:, int(diffx_half):-int(diffx_half)-1]
+                else: #otherwise remove it from both sides:
+                    img_cropx = img[:, int(diffx_half):-int(diffx_half)]
 
-                    #same for y
-                    if int(diffy_half) != diffy_half:   
-                        img_cropy = img_cropx[int(diffy_half):-int(diffy_half)-1, :]
-                    else:
-                        img_cropy = img_cropx[int(diffy_half):-int(diffy_half), :]
-                    
-                    #save over original images
-                    resized = np.ascontiguousarray(img_cropy)
-                    plt.imsave(path+image[:-4]+'.TIF', resized, cmap='gray')
+                #same for y
+                if diffy_half == 0:
+                    img_cropy = img_cropx
+                elif int(diffy_half) != diffy_half:   
+                    img_cropy = img_cropx[int(diffy_half):-int(diffy_half)-1, :]
+                else:
+                    img_cropy = img_cropx[int(diffy_half):-int(diffy_half), :]
+                
+                #save over original images
+                resized = Image.fromarray(img_cropy)
+                resized.save(path+image)
+
+    # crop the iarray:
+    if iarray.shape[1] > min_x or iarray.shape[0] > min_y:
+        diffx_half = (iarray.shape[1] - min_x)/2; diffy_half = (iarray.shape[0] - min_y)/2
+        if diffx_half == 0: # if the difference is 0
+            iarray_cropx = iarray # no need to crop the x dimension
+        elif int(diffx_half) != diffx_half:
+            # if the difference is a half pixel, make sure to remove the full value from the first side only
+            #remember for image slicing y is the first dimension, x is the second
+            iarray_cropx = iarray[:,int(diffx_half):-int(diffx_half)-1,:] 
+        else: #otherwise remove it from both sides:
+            iarray_cropx = iarray[:,int(diffx_half):-int(diffx_half),:]
+
+        #same for y
+        if diffy_half == 0:
+            iarray_cropy = iarray_cropx
+        elif int(diffy_half) != diffy_half:   
+            iarray_cropy = iarray_cropx[int(diffy_half):-int(diffy_half)-1,:,:]
+        else:
+            iarray_cropy = iarray_cropx[int(diffy_half):-int(diffy_half),:,:]
+
+        print(min_y, min_x, iarray_cropy.shape)
+        return iarray_cropy
+    else:
+        print(min_y, min_x, iarray.shape)
+        return iarray
 
 # In[ ]:
 def terminuspick_1glacier(BoxID, inputs, CPU):
